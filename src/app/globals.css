@@ -1,0 +1,633 @@
+@import "tailwindcss";
+
+:root {
+  --color-primary: #2b5049;
+  --color-primary-dark: #1c3733;
+  --color-gold: #c99a3e;
+  --color-gold-light: #e4c578;
+  --color-coral: #d9836f;
+  --color-purple: #7a6a9e;
+  --color-linen: #f1efe3;
+  --color-ink: #1c2422;
+  --color-card: #ffffff;
+  --color-border: #e2ded0;
+
+  --font-title: var(--font-fraunces), serif;
+  --font-body: var(--font-inter), sans-serif;
+  --font-mono: var(--font-plex-mono), monospace;
+}
+
+@theme inline {
+  --color-primary: var(--color-primary);
+  --color-primary-dark: var(--color-primary-dark);
+  --color-gold: var(--color-gold);
+  --color-coral: var(--color-coral);
+  --color-purple: var(--color-purple);
+  --color-linen: var(--color-linen);
+  --font-title: var(--font-title);
+  --font-body: var(--font-body);
+  --font-mono: var(--font-mono);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  padding: 0;
+  margin: 0;
+  min-height: 100%;
+}
+
+body {
+  background: var(--color-linen);
+  color: var(--color-ink);
+  font-family: var(--font-body);
+}
+
+h1,
+h2,
+h3 {
+  font-family: var(--font-title);
+  color: var(--color-primary-dark);
+  margin: 0 0 0.4rem;
+}
+
+.mono,
+.valor {
+  font-family: var(--font-mono);
+}
+
+a {
+  color: inherit;
+}
+
+/* ---------- Login ---------- */
+
+.login-screen {
+  min-height: 100dvh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+  background: radial-gradient(circle at top, #2b5049 0%, #1c3733 65%);
+}
+
+.login-card {
+  background: var(--color-linen);
+  border-radius: 1.25rem;
+  padding: 2.5rem 2rem;
+  max-width: 360px;
+  width: 100%;
+  text-align: center;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.25);
+}
+
+.login-card h1 {
+  font-size: 2rem;
+  margin-top: 1rem;
+}
+
+.login-subtitle {
+  color: #5a6b67;
+  margin-bottom: 1.5rem;
+}
+
+.login-error {
+  background: #fbe4e0;
+  color: #9a3c2b;
+  border-radius: 0.5rem;
+  padding: 0.6rem 0.8rem;
+  font-size: 0.85rem;
+  margin-bottom: 1rem;
+}
+
+.google-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  background: #fff;
+  border: 1px solid var(--color-border);
+  border-radius: 0.6rem;
+  padding: 0.7rem 1.2rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: box-shadow 0.15s ease;
+}
+
+.google-button:hover {
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.12);
+}
+
+/* ---------- App shell ---------- */
+
+.app-shell {
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+}
+
+.app-header {
+  background: var(--color-primary-dark);
+  color: var(--color-linen);
+  padding: 1rem 1.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.app-header .brand {
+  font-family: var(--font-title);
+  font-size: 1.3rem;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+}
+
+.app-header .user-pill {
+  font-size: 0.8rem;
+  opacity: 0.85;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.logout-button {
+  background: transparent;
+  border: 1px solid rgba(241, 239, 227, 0.4);
+  color: var(--color-linen);
+  border-radius: 0.4rem;
+  padding: 0.25rem 0.6rem;
+  font-size: 0.75rem;
+  cursor: pointer;
+}
+
+.logout-button:hover {
+  background: rgba(241, 239, 227, 0.12);
+}
+
+.app-main {
+  flex: 1;
+  padding: 1.25rem;
+  max-width: 1080px;
+  width: 100%;
+  margin: 0 auto;
+  padding-bottom: 5.5rem;
+}
+
+.app-nav {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: var(--color-card);
+  border-top: 1px solid var(--color-border);
+  display: flex;
+  justify-content: space-around;
+  padding: 0.4rem 0.2rem calc(0.4rem + env(safe-area-inset-bottom));
+  z-index: 20;
+}
+
+.app-nav a {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.15rem;
+  font-size: 0.65rem;
+  color: #6e7a76;
+  text-decoration: none;
+  padding: 0.35rem 0.4rem;
+  border-radius: 0.5rem;
+  flex: 1;
+  text-align: center;
+}
+
+.app-nav a.active {
+  color: var(--color-primary-dark);
+  background: rgba(43, 80, 73, 0.08);
+  font-weight: 600;
+}
+
+/* ---------- Cards / dashboard ---------- */
+
+.card {
+  background: var(--color-card);
+  border: 1px solid var(--color-border);
+  border-radius: 1rem;
+  padding: 1.1rem 1.2rem;
+}
+
+.section-title {
+  font-family: var(--font-title);
+  font-size: 1.1rem;
+  color: var(--color-primary-dark);
+  margin-bottom: 0.75rem;
+}
+
+.kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 0.75rem;
+  margin-bottom: 1.25rem;
+}
+
+.kpi-card {
+  background: var(--color-card);
+  border: 1px solid var(--color-border);
+  border-radius: 0.9rem;
+  padding: 0.9rem 1rem;
+}
+
+.kpi-label {
+  font-size: 0.75rem;
+  color: #6e7a76;
+  margin-bottom: 0.25rem;
+}
+
+.kpi-value {
+  font-family: var(--font-mono);
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--color-primary-dark);
+}
+
+.kpi-value.saldo-positivo {
+  color: var(--color-primary);
+}
+
+.kpi-value.saldo-negativo {
+  color: var(--color-coral);
+}
+
+.kpi-card.reserva .kpi-value {
+  color: var(--color-gold);
+}
+
+.charts-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+}
+
+.chart-card {
+  background: var(--color-card);
+  border: 1px solid var(--color-border);
+  border-radius: 1rem;
+  padding: 1rem;
+  min-height: 260px;
+}
+
+.month-filter {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.month-filter select {
+  border: 1px solid var(--color-border);
+  border-radius: 0.5rem;
+  padding: 0.4rem 0.6rem;
+  background: var(--color-card);
+  font-family: var(--font-body);
+}
+
+.person-breakdown {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 1rem;
+}
+
+.person-card h3 {
+  font-size: 1rem;
+}
+
+.person-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 0.3rem 0;
+  border-bottom: 1px dashed var(--color-border);
+  font-size: 0.9rem;
+}
+
+.person-row:last-child {
+  border-bottom: none;
+}
+
+/* ---------- Forms ---------- */
+
+.entry-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  max-width: 480px;
+}
+
+.tipo-toggle {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.tipo-toggle button {
+  flex: 1;
+  padding: 0.6rem;
+  border-radius: 0.6rem;
+  border: 1px solid var(--color-border);
+  background: var(--color-card);
+  font-weight: 600;
+  cursor: pointer;
+  color: #6e7a76;
+}
+
+.tipo-toggle button.active[data-tipo="entrada"] {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+  color: #fff;
+}
+
+.tipo-toggle button.active[data-tipo="saida"] {
+  background: var(--color-coral);
+  border-color: var(--color-coral);
+  color: #fff;
+}
+
+.tipo-toggle button.active[data-tipo="investimento"] {
+  background: var(--color-purple);
+  border-color: var(--color-purple);
+  color: #fff;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.field label {
+  font-size: 0.8rem;
+  color: #6e7a76;
+  font-weight: 600;
+}
+
+.field input,
+.field select,
+.field textarea {
+  border: 1px solid var(--color-border);
+  border-radius: 0.6rem;
+  padding: 0.6rem 0.7rem;
+  font-family: var(--font-body);
+  font-size: 0.95rem;
+  background: var(--color-card);
+}
+
+.field input.valor-input {
+  font-family: var(--font-mono);
+}
+
+.subcategoria-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.subcategoria-grid button {
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  padding: 0.4rem 0.9rem;
+  background: var(--color-card);
+  cursor: pointer;
+  font-size: 0.85rem;
+}
+
+.subcategoria-grid button.active {
+  background: var(--color-primary-dark);
+  color: var(--color-linen);
+  border-color: var(--color-primary-dark);
+}
+
+.primary-button {
+  background: var(--color-primary-dark);
+  color: var(--color-linen);
+  border: none;
+  border-radius: 0.7rem;
+  padding: 0.8rem 1rem;
+  font-weight: 600;
+  font-size: 1rem;
+  cursor: pointer;
+}
+
+.primary-button:hover {
+  background: var(--color-primary);
+}
+
+.primary-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.form-message {
+  font-size: 0.85rem;
+  border-radius: 0.5rem;
+  padding: 0.5rem 0.7rem;
+}
+
+.form-message.success {
+  background: #e2eee9;
+  color: var(--color-primary-dark);
+}
+
+.form-message.error {
+  background: #fbe4e0;
+  color: #9a3c2b;
+}
+
+/* ---------- Histórico ---------- */
+
+.filters-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  margin-bottom: 1rem;
+}
+
+.filters-bar select {
+  border: 1px solid var(--color-border);
+  border-radius: 0.5rem;
+  padding: 0.4rem 0.6rem;
+  background: var(--color-card);
+}
+
+.entry-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.entry-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  background: var(--color-card);
+  border: 1px solid var(--color-border);
+  border-radius: 0.8rem;
+  padding: 0.75rem 0.9rem;
+}
+
+.entry-item .tag {
+  display: inline-block;
+  font-size: 0.7rem;
+  border-radius: 999px;
+  padding: 0.15rem 0.55rem;
+  margin-right: 0.5rem;
+  color: #fff;
+}
+
+.tag.entrada {
+  background: var(--color-primary);
+}
+
+.tag.saida {
+  background: var(--color-coral);
+}
+
+.tag.investimento {
+  background: var(--color-purple);
+}
+
+.entry-main {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.entry-desc {
+  font-weight: 600;
+}
+
+.entry-meta {
+  font-size: 0.78rem;
+  color: #6e7a76;
+}
+
+.entry-valor {
+  font-family: var(--font-mono);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.entry-valor.saida {
+  color: var(--color-coral);
+}
+
+.entry-valor.entrada {
+  color: var(--color-primary);
+}
+
+.entry-valor.investimento {
+  color: var(--color-purple);
+}
+
+.delete-button {
+  border: none;
+  background: transparent;
+  color: #9a3c2b;
+  cursor: pointer;
+  font-size: 1rem;
+  padding: 0.3rem;
+}
+
+.empty-state {
+  text-align: center;
+  color: #6e7a76;
+  padding: 2rem 0;
+}
+
+/* ---------- Reserva do bebê ---------- */
+
+.nest-hero {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 0.75rem;
+  padding: 1.5rem 1rem;
+}
+
+.progress-bar {
+  width: 100%;
+  max-width: 360px;
+  height: 10px;
+  background: var(--color-border);
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.progress-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--color-gold) 0%, var(--color-gold-light) 100%);
+  border-radius: 999px;
+  transition: width 0.3s ease;
+}
+
+.goal-form {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.goal-form input {
+  border: 1px solid var(--color-border);
+  border-radius: 0.5rem;
+  padding: 0.5rem 0.7rem;
+  font-family: var(--font-mono);
+  width: 140px;
+}
+
+/* ---------- Importar extrato ---------- */
+
+.dropzone {
+  border: 2px dashed var(--color-border);
+  border-radius: 1rem;
+  padding: 2rem 1rem;
+  text-align: center;
+  color: #6e7a76;
+  cursor: pointer;
+}
+
+.review-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+}
+
+.review-table th,
+.review-table td {
+  text-align: left;
+  padding: 0.4rem 0.5rem;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.review-table select,
+.review-table input {
+  border: 1px solid var(--color-border);
+  border-radius: 0.4rem;
+  padding: 0.25rem 0.35rem;
+  font-size: 0.82rem;
+  width: 100%;
+}
+
+@media (max-width: 640px) {
+  .app-header {
+    padding: 0.85rem 1rem;
+  }
+
+  .app-main {
+    padding: 1rem;
+    padding-bottom: 5.5rem;
+  }
+}
