@@ -22,29 +22,31 @@ export function DonutChart({
   }
 
   return (
-    <Doughnut
-      data={{
-        labels,
-        datasets: [
-          {
-            data: values,
-            backgroundColor: colors,
-            borderWidth: 0,
-          },
-        ],
-      }}
-      options={{
-        plugins: {
-          legend: { position: "bottom", labels: { boxWidth: 12, font: { size: 11 } } },
-          tooltip: {
-            callbacks: {
-              label: (ctx) => `${ctx.label}: ${formatBRL(ctx.parsed)}`,
+    <div style={{ position: "relative", height: 220 }}>
+      <Doughnut
+        data={{
+          labels,
+          datasets: [
+            {
+              data: values,
+              backgroundColor: colors,
+              borderWidth: 0,
+            },
+          ],
+        }}
+        options={{
+          plugins: {
+            legend: { position: "bottom", labels: { boxWidth: 12, font: { size: 11 } } },
+            tooltip: {
+              callbacks: {
+                label: (ctx) => `${ctx.label}: ${formatBRL(ctx.parsed)}`,
+              },
             },
           },
-        },
-        cutout: "62%",
-        maintainAspectRatio: false,
-      }}
-    />
+          cutout: "62%",
+          maintainAspectRatio: false,
+        }}
+      />
+    </div>
   );
 }

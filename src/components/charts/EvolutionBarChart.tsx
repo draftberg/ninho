@@ -23,28 +23,30 @@ export function EvolutionBarChart({
   saidas: number[];
 }) {
   return (
-    <Bar
-      data={{
-        labels,
-        datasets: [
-          { label: "Entradas", data: entradas, backgroundColor: "#2B5049", borderRadius: 4 },
-          { label: "Saídas", data: saidas, backgroundColor: "#D9836F", borderRadius: 4 },
-        ],
-      }}
-      options={{
-        plugins: {
-          legend: { position: "bottom", labels: { boxWidth: 12, font: { size: 11 } } },
-          tooltip: {
-            callbacks: {
-              label: (ctx) => `${ctx.dataset.label}: ${formatBRL(ctx.parsed.y ?? 0)}`,
+    <div style={{ position: "relative", height: 220 }}>
+      <Bar
+        data={{
+          labels,
+          datasets: [
+            { label: "Entradas", data: entradas, backgroundColor: "#2B5049", borderRadius: 4 },
+            { label: "Saídas", data: saidas, backgroundColor: "#D9836F", borderRadius: 4 },
+          ],
+        }}
+        options={{
+          plugins: {
+            legend: { position: "bottom", labels: { boxWidth: 12, font: { size: 11 } } },
+            tooltip: {
+              callbacks: {
+                label: (ctx) => `${ctx.dataset.label}: ${formatBRL(ctx.parsed.y ?? 0)}`,
+              },
             },
           },
-        },
-        scales: {
-          y: { ticks: { callback: (v) => formatBRL(Number(v)) } },
-        },
-        maintainAspectRatio: false,
-      }}
-    />
+          scales: {
+            y: { ticks: { callback: (v) => formatBRL(Number(v)) } },
+          },
+          maintainAspectRatio: false,
+        }}
+      />
+    </div>
   );
 }
