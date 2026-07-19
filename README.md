@@ -9,7 +9,7 @@ Postgres + Auth com Google), hospedado na Vercel.
 - **Next.js** (App Router, Server Actions) — frontend + backend.
 - **Supabase** — banco Postgres e autenticação (Google OAuth).
 - **Vercel** — hospedagem e deploy automático a partir do GitHub.
-- **Anthropic API** — categorização automática de extratos importados.
+- **Google Gemini API** — categorização automática de extratos importados (tier gratuito).
 
 ## Passos para colocar no ar
 
@@ -30,8 +30,8 @@ contas/credenciais por vocês).
 5. Copie `.env.example` para `.env.local` e preencha:
    - `NEXT_PUBLIC_SUPABASE_URL` e `NEXT_PUBLIC_SUPABASE_ANON_KEY` (Project
      Settings → API do Supabase).
-   - `ANTHROPIC_API_KEY` (necessária só para a tela de importação de
-     extrato).
+   - `GEMINI_API_KEY` (necessária só para a tela de importação de extrato —
+     chave gratuita em [aistudio.google.com](https://aistudio.google.com/apikey)).
 6. Ajuste os e-mails/nomes do casal em `src/lib/allowlist.ts` (e replique os
    mesmos e-mails na função `is_allowed_email()` de `supabase/schema.sql`
    caso mude os e-mails).
@@ -49,12 +49,12 @@ src/app/
   (app)/lancar/          formulário de novo lançamento
   (app)/historico/       lista de lançamentos com filtros e exclusão
   (app)/reserva-bebe/    meta, progresso e ilustração do ninho
-  (app)/importar-extrato/ upload de extrato + categorização via IA (Anthropic)
+  (app)/importar-extrato/ upload de extrato + categorização via IA (Gemini)
 src/lib/
   supabase/              clientes Supabase (browser, server, middleware)
   allowlist.ts           e-mails permitidos + nome de exibição de cada pessoa
   actions.ts             server actions (inserir/excluir lançamento, editar meta)
-  import-extrato.ts       server action que chama a API da Anthropic
+  import-extrato.ts       server action que chama a API do Gemini
   types.ts, aggregate.ts, data.ts, format.ts
 src/middleware.ts        protege as rotas: exige login e checa a allowlist
 supabase/schema.sql       tabelas + Row Level Security

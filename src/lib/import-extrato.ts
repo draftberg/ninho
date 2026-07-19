@@ -1,6 +1,6 @@
 "use server";
 
-import Anthropic from "@anthropic-ai/sdk";
+import { GoogleGenAI, Type } from "@google/genai";
 import type { NewEntry, Subcategoria, Tipo } from "@/lib/types";
 import { todayISO } from "@/lib/format";
 
@@ -34,11 +34,20 @@ async function extractText(file: File): Promise<string> {
   return buffer.toString("utf-8");
 }
 
-function parseJsonArray(raw: string): unknown[] {
-  const match = raw.match(/\[[\s\S]*\]/);
-  if (!match) throw new Error("A IA não retornou um JSON válido.");
-  return JSON.parse(match[0]);
-}
+const TRANSACTION_SCHEMA = {
+  type: Type.ARRAY,
+  items: {
+    type: Type.OBJECT,
+    properties: {
+      tipo: { type: Type.STRING, enum: TIPOS },
+      subcategoria: { type: Type.STRING, enum: SUBCATEGORIAS_VALIDAS },
+      valor: { type: Type.NUMBER },
+      descricao: { type: Type.STRING },
+      date: { type: Type.STRING, description: "Data no formato YYYY-MM-DD" },
+    },
+    required: ["tipo", "subcategoria", "valor", "descricao", "date"],
+  },
+};
 
 export interface ExtractionResult {
   transactions?: NewEntry[];
@@ -51,8 +60,8 @@ export async function extractTransactions(formData: FormData): Promise<Extractio
     return { error: "Selecione um arquivo (PDF, CSV ou TXT)." };
   }
 
-  if (!process.env.ANTHROPIC_API_KEY) {
-    return { error: "ANTHROPIC_API_KEY não configurada no servidor." };
+  if (!process.env.GEMINI_API_KEY) {
+    return { error: "GEMINI_API_KEY não configurada no servidor." };
   }
 
   let text: string;
@@ -64,8 +73,8 @@ export async function extractTransactions(formData: FormData): Promise<Extractio
 
   const trimmed = text.slice(0, 15000);
 
-  const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
-  const model = process.env.ANTHROPIC_MODEL || "claude-sonnet-5";
+  const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+  const model = process.env.GEMINI_MODEL || "gemini-2.5-flash";
 
   const prompt = `Você recebe abaixo o conteúdo de um extrato financeiro (PDF/CSV/TXT convertido em texto).
 Extraia cada transação e classifique cada uma em:
@@ -78,27 +87,25 @@ Extraia cada transação e classifique cada uma em:
 - "descricao": descrição curta da transação
 - "date": data no formato YYYY-MM-DD (se o ano não estiver claro, use o ano atual)
 
-Responda APENAS com um JSON array de objetos com essas 5 chaves, sem nenhum texto adicional.
-
 Conteúdo do extrato:
 """
 ${trimmed}
 """`;
 
-  const message = await anthropic.messages.create({
-    model,
-    max_tokens: 4096,
-    messages: [{ role: "user", content: prompt }],
-  });
-
-  const textBlock = message.content.find((block) => block.type === "text");
-  if (!textBlock || textBlock.type !== "text") {
-    return { error: "A IA não retornou texto." };
-  }
-
   let raw: unknown[];
   try {
-    raw = parseJsonArray(textBlock.text);
+    const response = await ai.models.generateContent({
+      model,
+      contents: prompt,
+      config: {
+        responseMimeType: "application/json",
+        responseSchema: TRANSACTION_SCHEMA,
+      },
+    });
+
+    const jsonText = response.text;
+    if (!jsonText) throw new Error("resposta vazia");
+    raw = JSON.parse(jsonText);
   } catch {
     return { error: "Não foi possível interpretar a resposta da IA." };
   }
