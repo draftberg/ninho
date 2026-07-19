@@ -1747,3 +1747,51 @@ a {
 .checklist-list.mini .checklist-item-nome {
   font-size: 0.82rem;
 }
+
+/* ---------- Loading skeleton ---------- */
+
+.page-skeleton {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.skeleton-block {
+  border-radius: 1rem;
+  background: linear-gradient(
+    100deg,
+    var(--color-border) 30%,
+    var(--color-bg) 50%,
+    var(--color-border) 70%
+  );
+  background-size: 200% 100%;
+  animation: skeleton-shimmer 1.4s ease-in-out infinite;
+}
+
+.skeleton-title {
+  width: 160px;
+  height: 28px;
+}
+
+.skeleton-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 1rem;
+}
+
+.skeleton-card {
+  height: 90px;
+}
+
+.skeleton-panel {
+  height: 260px;
+}
+
+@keyframes skeleton-shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
