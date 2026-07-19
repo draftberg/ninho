@@ -935,6 +935,63 @@ a {
   color: var(--color-ink-muted);
 }
 
+.checklist-item.a-receber {
+  border-left: 3px solid var(--color-pastel-entrada-ink);
+}
+
+.checklist-item.a-receber .checklist-check {
+  color: var(--color-pastel-entrada-ink);
+}
+
+.checklist-item.a-receber.done .checklist-check {
+  color: var(--color-pastel-entrada-ink);
+}
+
+.checklist-section-title {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--color-ink-muted);
+  margin: 1.1rem 0 0.5rem;
+}
+
+.checklist-section-title:first-child {
+  margin-top: 0;
+}
+
+.confirm-renda {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  padding: 0.85rem 1rem;
+  border-radius: 1rem;
+  background: var(--color-card);
+  border: 1px solid var(--color-pastel-entrada-ink);
+}
+
+.confirm-renda-fields {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.4rem;
+}
+
+.confirm-renda-fields input {
+  border: 1px solid var(--color-border);
+  border-radius: 0.6rem;
+  padding: 0.4rem 0.6rem;
+  font-family: var(--font-body);
+}
+
+.confirm-renda-fields input.valor-input {
+  font-family: var(--font-mono);
+  width: 120px;
+}
+
+.confirm-renda-actions {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: flex-end;
+}
+
 /* ---------- Reserva / metas ---------- */
 
 .goals-grid {

@@ -46,26 +46,6 @@ create index if not exists entries_date_idx on entries (date desc);
 create index if not exists entries_tipo_idx on entries (tipo);
 create index if not exists entries_goal_id_idx on entries (goal_id);
 
--- ---------- checklist mensal (contas a pagar, aportes a lembrar...) ----------
-
-create table if not exists checklist_items (
-  id uuid primary key default gen_random_uuid(),
-  nome text not null,
-  valor_esperado numeric(12, 2),
-  dia_vencimento int check (dia_vencimento between 1 and 31),
-  ativo boolean not null default true,
-  created_at timestamptz not null default now()
-);
-
-create table if not exists checklist_status (
-  id uuid primary key default gen_random_uuid(),
-  item_id uuid not null references checklist_items(id) on delete cascade,
-  mes text not null,
-  concluido boolean not null default false,
-  concluido_em timestamptz,
-  unique (item_id, mes)
-);
-
 -- ---------- perfil (nome, sobrenome, telefone, salário) ----------
 -- salário pode ser mensal (1 parcela) ou quinzenal (2 parcelas em dias diferentes)
 
@@ -82,6 +62,34 @@ create table if not exists profiles (
   salario_dia_2 int check (salario_dia_2 between 1 and 31),
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
+);
+
+-- ---------- checklist mensal (contas a pagar, salário a receber...) ----------
+-- itens "a_receber" com origem_profile_id são sincronizados a partir do
+-- salário do Perfil; confirmar um item desses cria o lançamento real de
+-- entrada (ver src/lib/actions.ts: confirmarRenda).
+
+create table if not exists checklist_items (
+  id uuid primary key default gen_random_uuid(),
+  nome text not null,
+  valor_esperado numeric(12, 2),
+  dia_vencimento int check (dia_vencimento between 1 and 31),
+  ativo boolean not null default true,
+  tipo text not null default 'a_pagar' check (tipo in ('a_pagar', 'a_receber')),
+  origem_profile_id uuid references profiles(id) on delete cascade,
+  origem_parcela smallint check (origem_parcela in (1, 2)),
+  created_at timestamptz not null default now(),
+  unique (origem_profile_id, origem_parcela)
+);
+
+create table if not exists checklist_status (
+  id uuid primary key default gen_random_uuid(),
+  item_id uuid not null references checklist_items(id) on delete cascade,
+  mes text not null,
+  concluido boolean not null default false,
+  concluido_em timestamptz,
+  entry_id uuid references entries(id) on delete set null,
+  unique (item_id, mes)
 );
 
 -- ---------- segurança: apenas as 2 contas do casal ----------
@@ -138,6 +146,10 @@ create policy "casal pode ver checklist items" on checklist_items
 drop policy if exists "casal pode criar checklist items" on checklist_items;
 create policy "casal pode criar checklist items" on checklist_items
   for insert with check (is_allowed_email());
+
+drop policy if exists "casal pode atualizar checklist items" on checklist_items;
+create policy "casal pode atualizar checklist items" on checklist_items
+  for update using (is_allowed_email()) with check (is_allowed_email());
 
 drop policy if exists "casal pode apagar checklist items" on checklist_items;
 create policy "casal pode apagar checklist items" on checklist_items

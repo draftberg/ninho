@@ -21,8 +21,8 @@ import {
 } from "@/lib/aggregate";
 import { buildCashFlow } from "@/lib/cashflow";
 import { formatBRL, monthLabel } from "@/lib/format";
-import { categoriaLabel, salarioParcelas, type Tipo } from "@/lib/types";
-import { personColorClass, personColorHex, personNameFor } from "@/lib/allowlist";
+import { categoriaLabel, type Tipo } from "@/lib/types";
+import { personColorClass, personColorHex } from "@/lib/allowlist";
 import {
   WalletIcon,
   TrendUpIcon,
@@ -39,7 +39,6 @@ import { PeriodToggle, type Periodo } from "./PeriodToggle";
 import { InsightsCard } from "./InsightsCard";
 import { CashFlowTable } from "./CashFlowTable";
 import { MiniCalendarPanel } from "./MiniCalendarPanel";
-import type { IncomeMarker } from "../calendario/CalendarGrid";
 import { ChecklistItemRow } from "../checklist/ChecklistItemRow";
 import Link from "next/link";
 import { ViewToggle, type Vista } from "@/components/ViewToggle";
@@ -150,16 +149,10 @@ export default async function DashboardPage({
   const calEntries = allEntries.filter((e) => e.date.startsWith(calMes));
   const calGoals = goals.filter((g) => g.data_alvo?.startsWith(calMes));
   const calDoneItemIds = new Set(calStatus.filter((s) => s.concluido).map((s) => s.item_id));
-  const calIncomes: IncomeMarker[] = profiles.flatMap((p) =>
-    salarioParcelas(p).map((parcela, i) => ({
-      id: `${p.id}-${i}`,
-      nome: personNameFor(p.email),
-      dia: parcela.dia,
-      valor: parcela.valor,
-    })),
-  );
 
   const checklistConcluidos = checklistItems.filter((i) => calDoneItemIds.has(i.id)).length;
+  const checklistReceber = checklistItems.filter((i) => i.tipo === "a_receber");
+  const checklistPagar = checklistItems.filter((i) => i.tipo === "a_pagar");
 
   return (
     <div className="dashboard-layout">
@@ -292,7 +285,6 @@ export default async function DashboardPage({
           items={checklistItems}
           doneItemIds={calDoneItemIds}
           goals={calGoals}
-          incomes={calIncomes}
         />
 
         <div className="mini-checklist card">
@@ -308,16 +300,30 @@ export default async function DashboardPage({
           {checklistItems.length === 0 && (
             <p className="empty-state small">Nenhum item cadastrado ainda.</p>
           )}
-          <div className="checklist-list mini">
-            {checklistItems.map((item) => (
-              <ChecklistItemRow
-                key={item.id}
-                item={item}
-                mes={calMes}
-                concluido={calDoneItemIds.has(item.id)}
-              />
-            ))}
-          </div>
+          {checklistReceber.length > 0 && (
+            <div className="checklist-list mini">
+              {checklistReceber.map((item) => (
+                <ChecklistItemRow
+                  key={item.id}
+                  item={item}
+                  mes={calMes}
+                  concluido={calDoneItemIds.has(item.id)}
+                />
+              ))}
+            </div>
+          )}
+          {checklistPagar.length > 0 && (
+            <div className="checklist-list mini">
+              {checklistPagar.map((item) => (
+                <ChecklistItemRow
+                  key={item.id}
+                  item={item}
+                  mes={calMes}
+                  concluido={calDoneItemIds.has(item.id)}
+                />
+              ))}
+            </div>
+          )}
         </div>
       </div>
     </div>

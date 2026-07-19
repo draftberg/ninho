@@ -6,7 +6,6 @@ import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import { CaretLeftIcon, CaretRightIcon, PlusIcon } from "@phosphor-icons/react";
 import { formatBRL } from "@/lib/format";
 import type { ChecklistItem, Entry, Goal } from "@/lib/types";
-import type { IncomeMarker } from "../calendario/CalendarGrid";
 
 const WEEKDAYS = ["D", "S", "T", "Q", "Q", "S", "S"];
 
@@ -21,7 +20,6 @@ export function MiniCalendarPanel({
   items,
   doneItemIds,
   goals,
-  incomes,
 }: {
   year: number;
   month: number;
@@ -29,7 +27,6 @@ export function MiniCalendarPanel({
   items: ChecklistItem[];
   doneItemIds: Set<string>;
   goals: Goal[];
-  incomes: IncomeMarker[];
 }) {
   const router = useRouter();
   const pathname = usePathname();
@@ -59,7 +56,6 @@ export function MiniCalendarPanel({
     return (
       entries.some((e) => e.date === dateStr) ||
       items.some((it) => it.dia_vencimento === day) ||
-      incomes.some((inc) => inc.dia === day) ||
       goals.some((g) => g.data_alvo === dateStr)
     );
   }
@@ -70,8 +66,8 @@ export function MiniCalendarPanel({
 
   const selectedDateStr = `${year}-${pad(month)}-${pad(selectedDay)}`;
   const dayEntries = entries.filter((e) => e.date === selectedDateStr);
-  const dayItems = items.filter((it) => it.dia_vencimento === selectedDay);
-  const dayIncomes = incomes.filter((inc) => inc.dia === selectedDay);
+  const dayItems = items.filter((it) => it.dia_vencimento === selectedDay && it.tipo === "a_pagar");
+  const dayIncomes = items.filter((it) => it.dia_vencimento === selectedDay && it.tipo === "a_receber");
   const dayGoals = goals.filter((g) => g.data_alvo === selectedDateStr);
   const dayIsEmpty =
     dayEntries.length === 0 && dayItems.length === 0 && dayIncomes.length === 0 && dayGoals.length === 0;
@@ -124,12 +120,16 @@ export function MiniCalendarPanel({
 
         {dayIsEmpty && <p className="empty-state small">Nada por aqui.</p>}
 
-        {dayIncomes.map((inc) => (
-          <div key={inc.id} className="timeline-item income">
+        {dayIncomes.map((item) => (
+          <div key={item.id} className={`timeline-item income${doneItemIds.has(item.id) ? " done" : ""}`}>
             <span className="timeline-dot" />
             <div>
-              <strong>Salário — {inc.nome}</strong>
-              <span className="entry-meta">{formatBRL(inc.valor)}</span>
+              <strong>{item.nome}</strong>
+              <span className="entry-meta">
+                {item.valor_esperado != null && formatBRL(item.valor_esperado)}
+                {item.valor_esperado != null && " · "}
+                {doneItemIds.has(item.id) ? "confirmado" : "pendente"}
+              </span>
             </div>
           </div>
         ))}

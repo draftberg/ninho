@@ -260,19 +260,31 @@ export interface Goal {
 
 export type NewGoal = Omit<Goal, "id" | "created_at">;
 
-// Item recorrente do checklist mensal (conta a pagar, aporte a lembrar, etc.).
-// A conclusão de cada item é rastreada por mês em ChecklistStatus, então o
-// mesmo item "desmarca" automaticamente no mês seguinte.
+export type TipoChecklistItem = "a_pagar" | "a_receber";
+
+// Item recorrente do checklist mensal: uma conta a pagar/aporte a lembrar
+// (a_pagar) ou uma parcela de salário a confirmar (a_receber). Itens
+// a_receber com origem_profile_id são sincronizados a partir do salário
+// cadastrado no Perfil — confirmar esses itens cria o lançamento real de
+// entrada (ver actions.ts: confirmarRenda). A conclusão de cada item é
+// rastreada por mês em ChecklistStatus, então o mesmo item "desmarca"
+// automaticamente no mês seguinte.
 export interface ChecklistItem {
   id: string;
   nome: string;
   valor_esperado: number | null;
   dia_vencimento: number | null;
   ativo: boolean;
+  tipo: TipoChecklistItem;
+  origem_profile_id: string | null;
+  origem_parcela: number | null;
   created_at: string;
 }
 
-export type NewChecklistItem = Omit<ChecklistItem, "id" | "created_at" | "ativo">;
+export type NewChecklistItem = Omit<
+  ChecklistItem,
+  "id" | "created_at" | "ativo" | "tipo" | "origem_profile_id" | "origem_parcela"
+>;
 
 export interface ChecklistStatus {
   id: string;
@@ -280,6 +292,7 @@ export interface ChecklistStatus {
   mes: string;
   concluido: boolean;
   concluido_em: string | null;
+  entry_id: string | null;
 }
 
 export type TipoSalario = "mensal" | "quinzenal";

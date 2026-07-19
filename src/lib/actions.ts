@@ -152,24 +152,152 @@ export async function upsertProfile(formData: FormData) {
   const valor2Raw = formData.get("salario_valor_2") as string;
   const dia2Raw = formData.get("salario_dia_2") as string;
 
-  const { error } = await supabase.from("profiles").upsert(
-    {
-      email,
-      nome,
-      sobrenome,
-      telefone,
-      tipo_salario: tipoSalario,
-      salario_valor_1: valor1Raw ? Number(valor1Raw) : null,
-      salario_dia_1: dia1Raw ? Number(dia1Raw) : null,
-      salario_valor_2: tipoSalario === "quinzenal" && valor2Raw ? Number(valor2Raw) : null,
-      salario_dia_2: tipoSalario === "quinzenal" && dia2Raw ? Number(dia2Raw) : null,
-      updated_at: new Date().toISOString(),
-    },
-    { onConflict: "email" },
-  );
+  const valor1 = valor1Raw ? Number(valor1Raw) : null;
+  const dia1 = dia1Raw ? Number(dia1Raw) : null;
+  const valor2 = tipoSalario === "quinzenal" && valor2Raw ? Number(valor2Raw) : null;
+  const dia2 = tipoSalario === "quinzenal" && dia2Raw ? Number(dia2Raw) : null;
+
+  const { data: profile, error } = await supabase
+    .from("profiles")
+    .upsert(
+      {
+        email,
+        nome,
+        sobrenome,
+        telefone,
+        tipo_salario: tipoSalario,
+        salario_valor_1: valor1,
+        salario_dia_1: dia1,
+        salario_valor_2: valor2,
+        salario_dia_2: dia2,
+        updated_at: new Date().toISOString(),
+      },
+      { onConflict: "email" },
+    )
+    .select()
+    .single();
   if (error) throw new Error(error.message);
 
+  await syncSalarioChecklistItems(supabase, profile.id, personNameFor(email), [
+    { parcela: 1, valor: valor1, dia: dia1 },
+    { parcela: 2, valor: valor2, dia: dia2 },
+  ]);
+
   revalidatePath("/perfil");
+  revalidatePath("/checklist");
   revalidatePath("/calendario");
   revalidatePath("/dashboard");
+}
+
+async function syncSalarioChecklistItems(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  profileId: string,
+  autor: string,
+  parcelas: { parcela: 1 | 2; valor: number | null; dia: number | null }[],
+) {
+  for (const { parcela, valor, dia } of parcelas) {
+    if (valor && dia) {
+      const { error } = await supabase.from("checklist_items").upsert(
+        {
+          nome: `Salário — ${autor}`,
+          valor_esperado: valor,
+          dia_vencimento: dia,
+          tipo: "a_receber",
+          origem_profile_id: profileId,
+          origem_parcela: parcela,
+        },
+        { onConflict: "origem_profile_id,origem_parcela" },
+      );
+      if (error) throw new Error(error.message);
+    } else {
+      const { error } = await supabase
+        .from("checklist_items")
+        .delete()
+        .eq("origem_profile_id", profileId)
+        .eq("origem_parcela", parcela);
+      if (error) throw new Error(error.message);
+    }
+  }
+}
+
+export async function confirmarRenda(itemId: string, mes: string, valor: number, date: string) {
+  const { supabase } = await currentAuthor();
+
+  const { data: item, error: itemError } = await supabase
+    .from("checklist_items")
+    .select("origem_profile_id")
+    .eq("id", itemId)
+    .single();
+  if (itemError) throw new Error(itemError.message);
+  if (!item.origem_profile_id) throw new Error("Item não é uma entrada de salário.");
+
+  const { data: profile, error: profileError } = await supabase
+    .from("profiles")
+    .select("email")
+    .eq("id", item.origem_profile_id)
+    .single();
+  if (profileError) throw new Error(profileError.message);
+
+  const { data: entry, error: entryError } = await supabase
+    .from("entries")
+    .insert({
+      tipo: "entrada",
+      categoria: "salario",
+      subcategoria: "salario",
+      valor,
+      descricao: "Salário confirmado",
+      date,
+      autor: personNameFor(profile.email),
+      goal_id: null,
+    })
+    .select()
+    .single();
+  if (entryError) throw new Error(entryError.message);
+
+  const { error: statusError } = await supabase.from("checklist_status").upsert(
+    {
+      item_id: itemId,
+      mes,
+      concluido: true,
+      concluido_em: new Date().toISOString(),
+      entry_id: entry.id,
+    },
+    { onConflict: "item_id,mes" },
+  );
+  if (statusError) throw new Error(statusError.message);
+
+  revalidatePath("/checklist");
+  revalidatePath("/dashboard");
+  revalidatePath("/historico");
+  revalidatePath("/calendario");
+}
+
+export async function desconfirmarRenda(itemId: string, mes: string) {
+  const { supabase } = await currentAuthor();
+
+  const { data: status, error: statusError } = await supabase
+    .from("checklist_status")
+    .select("entry_id")
+    .eq("item_id", itemId)
+    .eq("mes", mes)
+    .maybeSingle();
+  if (statusError) throw new Error(statusError.message);
+
+  if (status?.entry_id) {
+    const { error: deleteError } = await supabase.from("entries").delete().eq("id", status.entry_id);
+    if (deleteError) throw new Error(deleteError.message);
+  }
+
+  const { error } = await supabase
+    .from("checklist_status")
+    .upsert(
+      { item_id: itemId, mes, concluido: false, concluido_em: null, entry_id: null },
+      { onConflict: "item_id,mes" },
+    );
+  if (error) throw new Error(error.message);
+
+  revalidatePath("/checklist");
+  revalidatePath("/dashboard");
+  revalidatePath("/historico");
+  revalidatePath("/calendario");
 }

@@ -31,6 +31,9 @@ export default async function ChecklistPage({
     .filter((i) => statusByItem.get(i.id)?.concluido)
     .reduce((sum, i) => sum + Number(i.valor_esperado ?? 0), 0);
 
+  const receber = items.filter((i) => i.tipo === "a_receber");
+  const pagar = items.filter((i) => i.tipo === "a_pagar");
+
   return (
     <div>
       <h2 className="section-title">Checklist mensal</h2>
@@ -51,16 +54,37 @@ export default async function ChecklistPage({
         <p className="empty-state">Nenhum item no checklist ainda. Adicione abaixo.</p>
       )}
 
-      <div className="checklist-list">
-        {items.map((item) => (
-          <ChecklistItemRow
-            key={item.id}
-            item={item}
-            mes={mes}
-            concluido={statusByItem.get(item.id)?.concluido ?? false}
-          />
-        ))}
-      </div>
+      {receber.length > 0 && (
+        <>
+          <div className="checklist-section-title">Entradas do mês</div>
+          <div className="checklist-list">
+            {receber.map((item) => (
+              <ChecklistItemRow
+                key={item.id}
+                item={item}
+                mes={mes}
+                concluido={statusByItem.get(item.id)?.concluido ?? false}
+              />
+            ))}
+          </div>
+        </>
+      )}
+
+      {pagar.length > 0 && (
+        <>
+          <div className="checklist-section-title">Contas e aportes</div>
+          <div className="checklist-list">
+            {pagar.map((item) => (
+              <ChecklistItemRow
+                key={item.id}
+                item={item}
+                mes={mes}
+                concluido={statusByItem.get(item.id)?.concluido ?? false}
+              />
+            ))}
+          </div>
+        </>
+      )}
 
       <CreateChecklistItemForm />
     </div>
