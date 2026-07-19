@@ -152,6 +152,7 @@ ${trimmed}
         descricao: typeof item.descricao === "string" ? item.descricao : null,
         date,
         autor: "",
+        goal_id: null,
       };
     })
     .filter((t) => t.valor > 0);

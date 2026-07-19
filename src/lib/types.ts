@@ -189,42 +189,20 @@ export const CATEGORIAS: Record<Tipo, CategoriaOption[]> = {
   ],
   investimento: [
     {
-      value: "reserva-bebe",
-      label: "Reserva do bebê",
+      value: "meta",
+      label: "Meta",
       subcategorias: [
         { value: "aporte", label: "Aporte mensal" },
         { value: "presente-doacao", label: "Presente/Doação" },
         { value: "rendimento", label: "Rendimento" },
       ],
     },
-    {
-      value: "reserva-emergencia",
-      label: "Reserva/Emergência",
-      subcategorias: [
-        { value: "aporte", label: "Aporte mensal" },
-        { value: "rendimento", label: "Rendimento" },
-      ],
-    },
-    {
-      value: "previdencia",
-      label: "Previdência",
-      subcategorias: [
-        { value: "aporte", label: "Aporte mensal" },
-        { value: "rendimento", label: "Rendimento" },
-      ],
-    },
-    {
-      value: "acoes",
-      label: "Ações/Renda Variável",
-      subcategorias: [
-        { value: "aporte", label: "Aporte" },
-        { value: "rendimento", label: "Rendimento" },
-      ],
-    },
   ],
 };
 
-export const RESERVA_BEBE_CATEGORIA = "reserva-bebe";
+// Todo lançamento de investimento usa essa categoria — a meta específica
+// (Reserva do bebê, Viagem, etc.) é identificada por goal_id, não mais por categoria.
+export const META_CATEGORIA = "meta";
 
 export const TIPO_LABELS: Record<Tipo, string> = {
   entrada: "Entrada",
@@ -260,12 +238,24 @@ export interface Entry {
   valor: number;
   descricao: string | null;
   autor: string;
+  goal_id: string | null;
   created_at: string;
 }
 
 export type NewEntry = Omit<Entry, "id" | "created_at">;
 
-export interface Settings {
-  id: number;
-  meta_bebe: number;
+// Uma meta é qualquer objetivo de investimento/reserva criado pelo casal
+// (reserva do bebê, viagem, etc.). A reserva do bebê original é marcada com
+// especial_bebe=true para manter a ilustração do ninho — identificada por
+// flag, não por nome, então pode ser renomeada livremente.
+export interface Goal {
+  id: string;
+  nome: string;
+  valor_meta: number | null;
+  data_inicio: string | null;
+  data_alvo: string | null;
+  especial_bebe: boolean;
+  created_at: string;
 }
+
+export type NewGoal = Omit<Goal, "id" | "created_at">;

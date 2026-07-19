@@ -1,10 +1,10 @@
 import { createClient } from "@/lib/supabase/server";
-import { fetchAllEntries } from "@/lib/data";
+import { fetchAllEntries, fetchGoals } from "@/lib/data";
 import {
   monthOptions,
   filterByMonth,
   sumByTipo,
-  reservaBebeTotal,
+  totalByGoal,
   composicaoPorCategoria,
   composicaoPorPessoa,
   evolucaoUltimosMeses,
@@ -13,6 +13,14 @@ import {
 import { formatBRL } from "@/lib/format";
 import { categoriaLabel, type Tipo } from "@/lib/types";
 import { personColorClass, personColorHex } from "@/lib/allowlist";
+import {
+  WalletIcon,
+  TrendUpIcon,
+  TrendDownIcon,
+  ChartLineUpIcon,
+  PiggyBankIcon,
+  UserCircleIcon,
+} from "@phosphor-icons/react/dist/ssr";
 import { DonutChart } from "@/components/charts/DonutChart";
 import { EvolutionBarChart } from "@/components/charts/EvolutionBarChart";
 import { MonthFilter } from "./MonthFilter";
@@ -81,7 +89,7 @@ export default async function DashboardPage({
   const { mes, vista: vistaParam } = await searchParams;
   const vista: Vista = vistaParam === "pessoa" ? "pessoa" : "categoria";
   const supabase = await createClient();
-  const allEntries = await fetchAllEntries(supabase);
+  const [allEntries, goals] = await Promise.all([fetchAllEntries(supabase), fetchGoals(supabase)]);
 
   const months = monthOptions(allEntries);
   const selectedMonth = mes && (mes === "todos" || months.includes(mes)) ? mes : (months[0] ?? "todos");
@@ -91,7 +99,8 @@ export default async function DashboardPage({
   const totalSaida = sumByTipo(filtered, "saida");
   const totalInvestimento = sumByTipo(filtered, "investimento");
   const saldo = totalEntrada - totalSaida - totalInvestimento;
-  const reservaBebe = reservaBebeTotal(filtered);
+  const metaBebe = goals.find((g) => g.especial_bebe);
+  const reservaBebe = metaBebe ? totalByGoal(filtered, metaBebe.id) : 0;
 
   const donutEntrada = donutFor(filtered, "entrada", vista);
   const donutSaida = donutFor(filtered, "saida", vista);
@@ -109,25 +118,35 @@ export default async function DashboardPage({
 
       <div className="kpi-grid">
         <div className="kpi-card">
-          <div className="kpi-label">Saldo do período</div>
+          <div className="kpi-label">
+            <WalletIcon size={15} weight="bold" /> Saldo do período
+          </div>
           <div className={`kpi-value ${saldo >= 0 ? "saldo-positivo" : "saldo-negativo"}`}>
             {formatBRL(saldo)}
           </div>
         </div>
         <div className="kpi-card entradas">
-          <div className="kpi-label">Entradas</div>
+          <div className="kpi-label">
+            <TrendUpIcon size={15} weight="bold" /> Entradas
+          </div>
           <div className="kpi-value">{formatBRL(totalEntrada)}</div>
         </div>
         <div className="kpi-card saidas">
-          <div className="kpi-label">Saídas</div>
+          <div className="kpi-label">
+            <TrendDownIcon size={15} weight="bold" /> Saídas
+          </div>
           <div className="kpi-value">{formatBRL(totalSaida)}</div>
         </div>
         <div className="kpi-card investido">
-          <div className="kpi-label">Investido</div>
+          <div className="kpi-label">
+            <ChartLineUpIcon size={15} weight="bold" /> Investido
+          </div>
           <div className="kpi-value">{formatBRL(totalInvestimento)}</div>
         </div>
         <div className="kpi-card reserva">
-          <div className="kpi-label">Reserva do bebê</div>
+          <div className="kpi-label">
+            <PiggyBankIcon size={15} weight="bold" /> {metaBebe?.nome ?? "Reserva do bebê"}
+          </div>
           <div className="kpi-value">{formatBRL(reservaBebe)}</div>
         </div>
       </div>
@@ -172,7 +191,9 @@ export default async function DashboardPage({
         {pessoas.length === 0 && <p className="empty-state">Sem lançamentos neste período.</p>}
         {pessoas.map((p) => (
           <div key={p.autor} className={`card person-card ${personColorClass(p.autor)}`}>
-            <h3>{p.autor}</h3>
+            <h3>
+              <UserCircleIcon size={17} weight="fill" /> {p.autor}
+            </h3>
             <div className="person-row">
               <span>Entrada</span>
               <span className="mono">{formatBRL(p.entrada)}</span>

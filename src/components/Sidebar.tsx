@@ -20,7 +20,7 @@ const LINKS = [
   { href: "/dashboard", label: "Painel", icon: SquaresFourIcon },
   { href: "/lancar", label: "Lançar", icon: PlusCircleIcon },
   { href: "/historico", label: "Histórico", icon: ClockCounterClockwiseIcon },
-  { href: "/reserva-bebe", label: "Reserva", icon: PiggyBankIcon },
+  { href: "/reserva", label: "Reserva", icon: PiggyBankIcon },
   { href: "/importar-extrato", label: "Importar", icon: UploadSimpleIcon },
 ];
 

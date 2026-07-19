@@ -381,6 +381,9 @@ a {
 }
 
 .kpi-label {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
   font-size: 0.78rem;
   font-weight: 600;
   color: var(--color-pastel-saldo-ink);
@@ -477,6 +480,9 @@ a {
 
 .person-card h3 {
   font-size: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
 }
 
 .person-row {
@@ -526,6 +532,31 @@ a {
   background: var(--color-pessoa-outro);
 }
 
+.category-icon {
+  width: 22px;
+  height: 22px;
+  border-radius: 0.5rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.category-icon.entrada {
+  background: var(--color-pastel-entrada);
+  color: var(--color-pastel-entrada-ink);
+}
+
+.category-icon.saida {
+  background: var(--color-pastel-saida);
+  color: var(--color-pastel-saida-ink);
+}
+
+.category-icon.investimento {
+  background: var(--color-pastel-investimento);
+  color: var(--color-pastel-investimento-ink);
+}
+
 .view-toggle {
   display: inline-flex;
   gap: 0.25rem;
@@ -568,6 +599,10 @@ a {
 }
 
 .tipo-toggle button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
   flex: 1;
   padding: 0.6rem;
   border-radius: 0.8rem;
@@ -631,6 +666,9 @@ a {
 }
 
 .subcategoria-grid button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
   border: 1px solid var(--color-border);
   border-radius: 999px;
   padding: 0.4rem 0.9rem;
@@ -822,7 +860,119 @@ a {
   padding: 2rem 0;
 }
 
-/* ---------- Reserva do bebê ---------- */
+/* ---------- Reserva / metas ---------- */
+
+.goals-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 0.75rem;
+  margin-bottom: 1.5rem;
+}
+
+.goal-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  padding: 1rem;
+  border-radius: 1.1rem;
+  background: var(--color-card);
+  border: 1px solid var(--color-border);
+  text-decoration: none;
+  color: var(--color-ink);
+  cursor: pointer;
+  transition: border-color 0.15s ease, transform 0.15s ease;
+}
+
+.goal-card:hover {
+  transform: translateY(-2px);
+}
+
+.goal-card.active {
+  border-color: var(--color-gold);
+  box-shadow: 0 0 0 1px var(--color-gold);
+}
+
+.goal-card-icon {
+  color: var(--color-gold);
+}
+
+.goal-card-name {
+  font-weight: 700;
+  font-size: 0.95rem;
+}
+
+.goal-card-valor {
+  font-family: var(--font-mono);
+  font-weight: 700;
+}
+
+.goal-card-meta,
+.goal-card-data {
+  font-size: 0.75rem;
+  color: var(--color-ink-muted);
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.goal-card-new {
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  color: var(--color-ink-muted);
+  border-style: dashed;
+  background: transparent;
+  font-family: var(--font-body);
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.goal-card-new-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 1rem;
+  border-radius: 1.1rem;
+  background: var(--color-card);
+  border: 1px solid var(--color-border);
+}
+
+.goal-card-new-form label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  font-size: 0.75rem;
+  color: var(--color-ink-muted);
+}
+
+.goal-card-new-form input {
+  border: 1px solid var(--color-border);
+  border-radius: 0.6rem;
+  padding: 0.4rem 0.6rem;
+  font-family: var(--font-body);
+}
+
+.goal-card-new-actions {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: flex-end;
+}
+
+.secondary-button {
+  background: transparent;
+  color: var(--color-ink-muted);
+  border: 1px solid var(--color-border);
+  border-radius: 0.9rem;
+  padding: 0.8rem 1rem;
+  font-weight: 700;
+  font-size: 1rem;
+  cursor: pointer;
+  font-family: var(--font-body);
+}
+
+.secondary-button:hover {
+  background: var(--color-border);
+}
 
 .nest-hero {
   display: flex;

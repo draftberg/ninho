@@ -8,13 +8,14 @@ import {
   TIPO_LABELS,
   categoriasDoTipo,
   subcategoriasDaCategoria,
+  type Goal,
   type NewEntry,
   type Tipo,
 } from "@/lib/types";
 
 const TIPOS: Tipo[] = ["entrada", "saida", "investimento"];
 
-export function ImportarExtratoClient() {
+export function ImportarExtratoClient({ goals }: { goals: Goal[] }) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -98,6 +99,7 @@ export function ImportarExtratoClient() {
                 <th>Tipo</th>
                 <th>Categoria</th>
                 <th>Subcategoria</th>
+                <th>Meta</th>
                 <th>Valor</th>
                 <th>Descrição</th>
                 <th></th>
@@ -120,7 +122,8 @@ export function ImportarExtratoClient() {
                         const tipo = e.target.value as Tipo;
                         const categoria = CATEGORIAS[tipo][0].value;
                         const subcategoria = CATEGORIAS[tipo][0].subcategorias[0].value;
-                        updateTransaction(i, { tipo, categoria, subcategoria });
+                        const goal_id = tipo === "investimento" ? (goals[0]?.id ?? null) : null;
+                        updateTransaction(i, { tipo, categoria, subcategoria, goal_id });
                       }}
                     >
                       {TIPOS.map((tipo) => (
@@ -157,6 +160,23 @@ export function ImportarExtratoClient() {
                         </option>
                       ))}
                     </select>
+                  </td>
+                  <td>
+                    {t.tipo === "investimento" ? (
+                      <select
+                        value={t.goal_id ?? ""}
+                        onChange={(e) => updateTransaction(i, { goal_id: e.target.value || null })}
+                      >
+                        <option value="">Sem meta</option>
+                        {goals.map((g) => (
+                          <option key={g.id} value={g.id}>
+                            {g.nome}
+                          </option>
+                        ))}
+                      </select>
+                    ) : (
+                      "—"
+                    )}
                   </td>
                   <td>
                     <input

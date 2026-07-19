@@ -1,9 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import { updateGoal } from "@/lib/actions";
+import { updateGoalTarget } from "@/lib/actions";
+import type { Goal } from "@/lib/types";
 
-export function GoalForm({ metaBebe }: { metaBebe: number }) {
+export function EditGoalForm({ goal }: { goal: Goal }) {
   const [editing, setEditing] = useState(false);
 
   if (!editing) {
@@ -18,19 +19,21 @@ export function GoalForm({ metaBebe }: { metaBebe: number }) {
     <form
       className="goal-form"
       action={async (formData) => {
-        await updateGoal(formData);
+        await updateGoalTarget(formData);
         setEditing(false);
       }}
     >
+      <input type="hidden" name="id" value={goal.id} />
       <input
         type="number"
-        name="meta_bebe"
+        name="valor_meta"
         step="0.01"
         min="0"
-        defaultValue={metaBebe}
+        placeholder="Valor da meta"
+        defaultValue={goal.valor_meta ?? ""}
         autoFocus
-        required
       />
+      <input type="date" name="data_alvo" defaultValue={goal.data_alvo ?? ""} />
       <button type="submit" className="primary-button">
         Salvar
       </button>

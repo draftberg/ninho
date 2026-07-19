@@ -2,6 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { fetchAllEntries } from "@/lib/data";
 import { formatBRL, formatDate } from "@/lib/format";
 import { TIPO_LABELS, categoriaLabel, subcategoriaLabel } from "@/lib/types";
+import { categoriaIcon } from "@/lib/category-icons";
 import { personColorClass } from "@/lib/allowlist";
 import { FiltersBar } from "./FiltersBar";
 import { DeleteButton } from "./DeleteButton";
@@ -38,11 +39,15 @@ export default async function HistoricoPage({
           const subLabel = subcategoriaLabel(entry.tipo, entry.categoria, entry.subcategoria);
           const sign = entry.tipo === "entrada" ? "+" : "-";
           const colorClass = vista === "pessoa" ? personColorClass(entry.autor) : entry.tipo;
+          const CategoriaIcon = categoriaIcon(entry.categoria);
 
           return (
             <div key={entry.id} className="entry-item">
               <div className="entry-row">
                 <PersonAvatar autor={entry.autor} />
+                <span className={`category-icon ${entry.tipo}`}>
+                  <CategoriaIcon size={14} weight="bold" />
+                </span>
                 <div className="entry-main">
                   <div>
                     <span className={`tag ${colorClass}`}>

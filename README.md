@@ -50,7 +50,7 @@ src/app/
   (app)/dashboard/       visão geral com gráficos (donut + evolução) e filtro por mês
   (app)/lancar/          formulário de novo lançamento
   (app)/historico/       lista de lançamentos com filtros e exclusão
-  (app)/reserva-bebe/    meta, progresso e ilustração do ninho
+  (app)/reserva/          metas (reserva do bebê, viagens, planos...), progresso e ilustração do ninho
   (app)/importar-extrato/ upload de extrato + categorização via IA (Gemini)
 src/lib/
   supabase/              clientes Supabase (browser, server, middleware)

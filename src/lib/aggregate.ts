@@ -1,5 +1,5 @@
 import { monthKeyOf, monthLabel } from "@/lib/format";
-import { RESERVA_BEBE_CATEGORIA, type Entry, type Tipo } from "@/lib/types";
+import type { Entry, Tipo } from "@/lib/types";
 
 export function monthOptions(entries: Entry[]): string[] {
   const set = new Set(entries.map((e) => monthKeyOf(e.date)));
@@ -15,10 +15,12 @@ export function sumByTipo(entries: Entry[], tipo: Tipo): number {
   return entries.filter((e) => e.tipo === tipo).reduce((sum, e) => sum + Number(e.valor), 0);
 }
 
-export function reservaBebeTotal(entries: Entry[]): number {
-  return entries
-    .filter((e) => e.tipo === "investimento" && e.categoria === RESERVA_BEBE_CATEGORIA)
-    .reduce((sum, e) => sum + Number(e.valor), 0);
+export function entriesByGoal(entries: Entry[], goalId: string): Entry[] {
+  return entries.filter((e) => e.tipo === "investimento" && e.goal_id === goalId);
+}
+
+export function totalByGoal(entries: Entry[], goalId: string): number {
+  return entriesByGoal(entries, goalId).reduce((sum, e) => sum + Number(e.valor), 0);
 }
 
 export function composicaoPorCategoria(

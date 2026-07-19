@@ -1,5 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import type { Entry, Settings } from "@/lib/types";
+import type { Entry, Goal } from "@/lib/types";
 
 export async function fetchAllEntries(supabase: SupabaseClient): Promise<Entry[]> {
   const { data, error } = await supabase
@@ -12,8 +12,12 @@ export async function fetchAllEntries(supabase: SupabaseClient): Promise<Entry[]
   return data as Entry[];
 }
 
-export async function fetchSettings(supabase: SupabaseClient): Promise<Settings> {
-  const { data, error } = await supabase.from("settings").select("*").eq("id", 1).single();
+export async function fetchGoals(supabase: SupabaseClient): Promise<Goal[]> {
+  const { data, error } = await supabase
+    .from("goals")
+    .select("*")
+    .order("created_at", { ascending: true });
+
   if (error) throw error;
-  return data as Settings;
+  return data as Goal[];
 }

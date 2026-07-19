@@ -1,6 +1,11 @@
+import { createClient } from "@/lib/supabase/server";
+import { fetchGoals } from "@/lib/data";
 import { ImportarExtratoClient } from "./ImportarExtratoClient";
 
-export default function ImportarExtratoPage() {
+export default async function ImportarExtratoPage() {
+  const supabase = await createClient();
+  const goals = await fetchGoals(supabase);
+
   return (
     <div>
       <h2 className="section-title">Importar extrato</h2>
@@ -8,7 +13,7 @@ export default function ImportarExtratoPage() {
         Envie um PDF, CSV ou TXT do extrato. A IA extrai e categoriza cada transação — revise antes
         de salvar.
       </p>
-      <ImportarExtratoClient />
+      <ImportarExtratoClient goals={goals} />
     </div>
   );
 }
