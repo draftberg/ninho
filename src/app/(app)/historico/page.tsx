@@ -1,7 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { fetchAllEntries } from "@/lib/data";
 import { formatBRL, formatDate } from "@/lib/format";
-import { TIPO_LABELS, SUBCATEGORIAS } from "@/lib/types";
+import { TIPO_LABELS, categoriaLabel, subcategoriaLabel } from "@/lib/types";
 import { personColorClass } from "@/lib/allowlist";
 import { FiltersBar } from "./FiltersBar";
 import { DeleteButton } from "./DeleteButton";
@@ -34,9 +34,8 @@ export default async function HistoricoPage({
 
       <div className="entry-list">
         {filtered.map((entry) => {
-          const subcategoriaLabel =
-            SUBCATEGORIAS[entry.tipo].find((s) => s.value === entry.subcategoria)?.label ??
-            entry.subcategoria;
+          const catLabel = categoriaLabel(entry.tipo, entry.categoria);
+          const subLabel = subcategoriaLabel(entry.tipo, entry.categoria, entry.subcategoria);
           const sign = entry.tipo === "entrada" ? "+" : "-";
           const colorClass = vista === "pessoa" ? personColorClass(entry.autor) : entry.tipo;
 
@@ -49,10 +48,10 @@ export default async function HistoricoPage({
                     <span className={`tag ${colorClass}`}>
                       {vista === "pessoa" ? entry.autor : TIPO_LABELS[entry.tipo]}
                     </span>
-                    <span className="entry-desc">{entry.descricao || subcategoriaLabel}</span>
+                    <span className="entry-desc">{entry.descricao || subLabel}</span>
                   </div>
                   <span className="entry-meta">
-                    {subcategoriaLabel} · {formatDate(entry.date)} · {entry.autor}
+                    {catLabel} · {subLabel} · {formatDate(entry.date)} · {entry.autor}
                   </span>
                 </div>
               </div>

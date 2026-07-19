@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { fetchAllEntries, fetchSettings } from "@/lib/data";
 import { formatBRL, formatDate } from "@/lib/format";
+import { RESERVA_BEBE_CATEGORIA } from "@/lib/types";
 import { personColorClass } from "@/lib/allowlist";
 import { NestIllustration } from "@/components/NestIllustration";
 import { PersonAvatar } from "@/components/PersonAvatar";
@@ -21,7 +22,7 @@ export default async function ReservaBebePage({
   ]);
 
   const contribuicoes = entries
-    .filter((e) => e.tipo === "investimento" && e.subcategoria === "nenem")
+    .filter((e) => e.tipo === "investimento" && e.categoria === RESERVA_BEBE_CATEGORIA)
     .sort((a, b) => (a.date < b.date ? 1 : -1));
 
   const total = contribuicoes.reduce((sum, e) => sum + Number(e.valor), 0);

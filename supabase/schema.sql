@@ -9,9 +9,20 @@ create table if not exists entries (
   id uuid primary key default gen_random_uuid(),
   date date not null,
   tipo text not null check (tipo in ('entrada', 'saida', 'investimento')),
-  subcategoria text not null check (
-    subcategoria in ('salario', 'freela', 'outros', 'fixo', 'variavel', 'nenem', 'futuro', 'reserva')
+  categoria text not null check (
+    categoria in (
+      -- entrada
+      'salario', 'freelance', 'rendimentos',
+      -- saida
+      'moradia', 'contas', 'alimentacao', 'transporte', 'baby', 'educacao',
+      'saude', 'lazer', 'pets', 'assinaturas', 'taxas-impostos',
+      -- investimento
+      'reserva-bebe', 'reserva-emergencia', 'previdencia', 'acoes',
+      -- comum a entrada/saida
+      'outros'
+    )
   ),
+  subcategoria text not null,
   valor numeric(12, 2) not null check (valor > 0),
   descricao text,
   autor text not null,

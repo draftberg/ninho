@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { personNameFor } from "@/lib/allowlist";
-import type { NewEntry, Subcategoria, Tipo } from "@/lib/types";
+import type { NewEntry, Tipo } from "@/lib/types";
 
 async function currentAuthor() {
   const supabase = await createClient();
@@ -19,7 +19,8 @@ export async function addEntry(formData: FormData) {
 
   const entry: NewEntry = {
     tipo: formData.get("tipo") as Tipo,
-    subcategoria: formData.get("subcategoria") as Subcategoria,
+    categoria: formData.get("categoria") as string,
+    subcategoria: formData.get("subcategoria") as string,
     valor: Number(formData.get("valor")),
     descricao: (formData.get("descricao") as string) || null,
     date: formData.get("date") as string,

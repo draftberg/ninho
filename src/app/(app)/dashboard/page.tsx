@@ -5,27 +5,50 @@ import {
   filterByMonth,
   sumByTipo,
   reservaBebeTotal,
-  composicaoPorSubcategoria,
+  composicaoPorCategoria,
   composicaoPorPessoa,
   evolucaoUltimosMeses,
   porPessoa,
 } from "@/lib/aggregate";
 import { formatBRL } from "@/lib/format";
-import { SUBCATEGORIAS, type Tipo } from "@/lib/types";
+import { categoriaLabel, type Tipo } from "@/lib/types";
 import { personColorClass, personColorHex } from "@/lib/allowlist";
 import { DonutChart } from "@/components/charts/DonutChart";
 import { EvolutionBarChart } from "@/components/charts/EvolutionBarChart";
 import { MonthFilter } from "./MonthFilter";
 import { ViewToggle, type Vista } from "@/components/ViewToggle";
 
-const DONUT_COLORS: Record<Tipo, string[]> = {
-  entrada: ["#2B5049", "#4F7A70", "#89A89F"],
-  saida: ["#D9836F", "#E8AC9E", "#B85F49"],
-  investimento: ["#7A6A9E", "#A594C4", "#5B4C7D"],
+// matiz base de cada tipo — as cores das fatias variam a claridade a partir daqui,
+// então a paleta se adapta automaticamente ao número de categorias de cada tipo.
+const DONUT_HUE: Record<Tipo, number> = {
+  entrada: 152, // verde
+  saida: 14, // coral
+  investimento: 262, // roxo
 };
 
-function subcategoriaLabel(tipo: Tipo, value: string) {
-  return SUBCATEGORIAS[tipo].find((s) => s.value === value)?.label ?? value;
+function hslToHex(h: number, sPercent: number, lPercent: number): string {
+  const s = sPercent / 100;
+  const l = lPercent / 100;
+  const a = s * Math.min(l, 1 - l);
+  const f = (n: number) => {
+    const k = (n + h / 30) % 12;
+    const color = l - a * Math.max(-1, Math.min(k - 3, 9 - k, 1));
+    return Math.round(255 * color)
+      .toString(16)
+      .padStart(2, "0");
+  };
+  return `#${f(0)}${f(8)}${f(4)}`;
+}
+
+function paletteFor(tipo: Tipo, count: number): string[] {
+  const hue = DONUT_HUE[tipo];
+  if (count <= 1) return [hslToHex(hue, 45, 32)];
+  const minLightness = 26;
+  const maxLightness = 78;
+  return Array.from({ length: count }, (_, i) => {
+    const l = minLightness + ((maxLightness - minLightness) * i) / (count - 1);
+    return hslToHex(hue, 48, l);
+  });
 }
 
 function donutFor(
@@ -42,11 +65,11 @@ function donutFor(
     };
   }
 
-  const composicao = composicaoPorSubcategoria(filtered, tipo);
+  const composicao = composicaoPorCategoria(filtered, tipo);
   return {
-    labels: composicao.labels.map((v) => subcategoriaLabel(tipo, v)),
+    labels: composicao.labels.map((v) => categoriaLabel(tipo, v)),
     values: composicao.values,
-    colors: DONUT_COLORS[tipo],
+    colors: paletteFor(tipo, composicao.labels.length),
   };
 }
 

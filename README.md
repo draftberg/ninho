@@ -20,7 +20,9 @@ contas/credenciais por vocês).
 1. **Criar um projeto no [supabase.com](https://supabase.com)** (plano gratuito).
 2. No SQL editor do projeto, rode o conteúdo de [`supabase/schema.sql`](./supabase/schema.sql)
    para criar as tabelas `entries` e `settings` com as políticas de segurança
-   (RLS restrita às 2 contas do casal).
+   (RLS restrita às 2 contas do casal). Se o banco já existia antes da
+   taxonomia de categorias (`categoria` + `subcategoria`), rode também os
+   arquivos em [`supabase/migrations/`](./supabase/migrations), em ordem.
 3. **Criar um projeto no [Google Cloud Console](https://console.cloud.google.com/)**:
    - Configure a tela de consentimento OAuth.
    - Crie uma credencial "OAuth Client ID" do tipo "Web application".

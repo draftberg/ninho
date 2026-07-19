@@ -1,20 +1,16 @@
 "use server";
 
 import { GoogleGenAI, Type } from "@google/genai";
-import type { NewEntry, Subcategoria, Tipo } from "@/lib/types";
+import {
+  CATEGORIAS,
+  categoriasDoTipo,
+  subcategoriasDaCategoria,
+  type NewEntry,
+  type Tipo,
+} from "@/lib/types";
 import { todayISO } from "@/lib/format";
 
 const TIPOS: Tipo[] = ["entrada", "saida", "investimento"];
-const SUBCATEGORIAS_VALIDAS: Subcategoria[] = [
-  "salario",
-  "freela",
-  "outros",
-  "fixo",
-  "variavel",
-  "nenem",
-  "futuro",
-  "reserva",
-];
 
 async function extractText(file: File): Promise<string> {
   const buffer = Buffer.from(await file.arrayBuffer());
@@ -40,14 +36,37 @@ const TRANSACTION_SCHEMA = {
     type: Type.OBJECT,
     properties: {
       tipo: { type: Type.STRING, enum: TIPOS },
-      subcategoria: { type: Type.STRING, enum: SUBCATEGORIAS_VALIDAS },
+      categoria: { type: Type.STRING, description: "Uma das categorias válidas para o tipo" },
+      subcategoria: {
+        type: Type.STRING,
+        description: "Uma das subcategorias válidas para a categoria escolhida",
+      },
       valor: { type: Type.NUMBER },
       descricao: { type: Type.STRING },
       date: { type: Type.STRING, description: "Data no formato YYYY-MM-DD" },
     },
-    required: ["tipo", "subcategoria", "valor", "descricao", "date"],
+    required: ["tipo", "categoria", "subcategoria", "valor", "descricao", "date"],
   },
 };
+
+function arvoreDeCategorias(): string {
+  return TIPOS.map((tipo) => {
+    const categorias = CATEGORIAS[tipo]
+      .map((c) => `    - "${c.value}" (${c.label}): ${c.subcategorias.map((s) => `"${s.value}"`).join(", ")}`)
+      .join("\n");
+    return `  ${tipo}:\n${categorias}`;
+  }).join("\n");
+}
+
+function categoriaValida(tipo: Tipo, categoria: string): string {
+  const categorias = categoriasDoTipo(tipo);
+  return categorias.some((c) => c.value === categoria) ? categoria : categorias[categorias.length - 1].value;
+}
+
+function subcategoriaValida(tipo: Tipo, categoria: string, subcategoria: string): string {
+  const subcategorias = subcategoriasDaCategoria(tipo, categoria);
+  return subcategorias.some((s) => s.value === subcategoria) ? subcategoria : subcategorias[0].value;
+}
 
 export interface ExtractionResult {
   transactions?: NewEntry[];
@@ -77,12 +96,15 @@ export async function extractTransactions(formData: FormData): Promise<Extractio
   const model = process.env.GEMINI_MODEL || "gemini-2.5-flash";
 
   const prompt = `Você recebe abaixo o conteúdo de um extrato financeiro (PDF/CSV/TXT convertido em texto).
-Extraia cada transação e classifique cada uma em:
-- "tipo": um de "entrada", "saida", "investimento"
-- "subcategoria": conforme o tipo:
-  - entrada: "salario", "freela", "outros"
-  - saida: "fixo", "variavel"
-  - investimento: "nenem", "futuro", "reserva"
+Extraia cada transação e classifique cada uma usando exatamente esta árvore de tipo → categoria → subcategoria
+(use sempre os valores entre aspas, nunca o rótulo em português):
+
+${arvoreDeCategorias()}
+
+Para cada transação retorne:
+- "tipo": um dos 3 valores acima
+- "categoria": uma categoria válida para o tipo escolhido
+- "subcategoria": uma subcategoria válida para a categoria escolhida
 - "valor": número positivo (sem símbolo de moeda)
 - "descricao": descrição curta da transação
 - "date": data no formato YYYY-MM-DD (se o ano não estiver claro, use o ano atual)
@@ -114,10 +136,8 @@ ${trimmed}
     .filter((item): item is Record<string, unknown> => typeof item === "object" && item !== null)
     .map((item) => {
       const tipo = TIPOS.includes(item.tipo as Tipo) ? (item.tipo as Tipo) : "saida";
-      const subcategoriaCandidata = item.subcategoria as Subcategoria;
-      const subcategoria = SUBCATEGORIAS_VALIDAS.includes(subcategoriaCandidata)
-        ? subcategoriaCandidata
-        : ("outros" as Subcategoria);
+      const categoria = categoriaValida(tipo, String(item.categoria ?? ""));
+      const subcategoria = subcategoriaValida(tipo, categoria, String(item.subcategoria ?? ""));
       const valor = Number(item.valor) || 0;
       const date =
         typeof item.date === "string" && /^\d{4}-\d{2}-\d{2}$/.test(item.date)
@@ -126,6 +146,7 @@ ${trimmed}
 
       return {
         tipo,
+        categoria,
         subcategoria,
         valor,
         descricao: typeof item.descricao === "string" ? item.descricao : null,

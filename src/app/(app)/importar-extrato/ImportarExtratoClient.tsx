@@ -3,7 +3,14 @@
 import { useRef, useState } from "react";
 import { extractTransactions } from "@/lib/import-extrato";
 import { saveImportedEntries } from "@/lib/actions";
-import { SUBCATEGORIAS, TIPO_LABELS, type NewEntry, type Subcategoria, type Tipo } from "@/lib/types";
+import {
+  CATEGORIAS,
+  TIPO_LABELS,
+  categoriasDoTipo,
+  subcategoriasDaCategoria,
+  type NewEntry,
+  type Tipo,
+} from "@/lib/types";
 
 const TIPOS: Tipo[] = ["entrada", "saida", "investimento"];
 
@@ -81,13 +88,15 @@ export function ImportarExtratoClient() {
       )}
 
       {transactions && transactions.length > 0 && (
-        <div style={{ marginTop: "1.5rem", overflowX: "auto" }}>
+        <div style={{ marginTop: "1.5rem" }}>
           <p>Revise antes de salvar:</p>
+          <div className="review-table-wrap">
           <table className="review-table">
             <thead>
               <tr>
                 <th>Data</th>
                 <th>Tipo</th>
+                <th>Categoria</th>
                 <th>Subcategoria</th>
                 <th>Valor</th>
                 <th>Descrição</th>
@@ -109,7 +118,9 @@ export function ImportarExtratoClient() {
                       value={t.tipo}
                       onChange={(e) => {
                         const tipo = e.target.value as Tipo;
-                        updateTransaction(i, { tipo, subcategoria: SUBCATEGORIAS[tipo][0].value });
+                        const categoria = CATEGORIAS[tipo][0].value;
+                        const subcategoria = CATEGORIAS[tipo][0].subcategorias[0].value;
+                        updateTransaction(i, { tipo, categoria, subcategoria });
                       }}
                     >
                       {TIPOS.map((tipo) => (
@@ -121,12 +132,26 @@ export function ImportarExtratoClient() {
                   </td>
                   <td>
                     <select
-                      value={t.subcategoria}
-                      onChange={(e) =>
-                        updateTransaction(i, { subcategoria: e.target.value as Subcategoria })
-                      }
+                      value={t.categoria}
+                      onChange={(e) => {
+                        const categoria = e.target.value;
+                        const subcategoria = subcategoriasDaCategoria(t.tipo, categoria)[0].value;
+                        updateTransaction(i, { categoria, subcategoria });
+                      }}
                     >
-                      {SUBCATEGORIAS[t.tipo].map((s) => (
+                      {categoriasDoTipo(t.tipo).map((c) => (
+                        <option key={c.value} value={c.value}>
+                          {c.label}
+                        </option>
+                      ))}
+                    </select>
+                  </td>
+                  <td>
+                    <select
+                      value={t.subcategoria}
+                      onChange={(e) => updateTransaction(i, { subcategoria: e.target.value })}
+                    >
+                      {subcategoriasDaCategoria(t.tipo, t.categoria).map((s) => (
                         <option key={s.value} value={s.value}>
                           {s.label}
                         </option>
@@ -161,6 +186,7 @@ export function ImportarExtratoClient() {
               ))}
             </tbody>
           </table>
+          </div>
 
           <button
             type="button"
