@@ -7,6 +7,7 @@ import {
   fetchProfiles,
 } from "@/lib/data";
 import { formatBRL } from "@/lib/format";
+import { salarioParcelas } from "@/lib/types";
 import { personNameFor } from "@/lib/allowlist";
 import { MonthNav } from "@/components/MonthNav";
 import { CalendarGrid, type IncomeMarker } from "./CalendarGrid";
@@ -38,14 +39,14 @@ export default async function CalendarioPage({
   const doneItemIds = new Set(status.filter((s) => s.concluido).map((s) => s.item_id));
   const goalsThisMonth = goals.filter((g) => g.data_alvo?.startsWith(mes));
 
-  const incomes: IncomeMarker[] = profiles
-    .filter((p) => p.salario_base && p.dia_recebimento)
-    .map((p) => ({
-      id: p.id,
+  const incomes: IncomeMarker[] = profiles.flatMap((p) =>
+    salarioParcelas(p).map((parcela, i) => ({
+      id: `${p.id}-${i}`,
       nome: personNameFor(p.email),
-      dia: p.dia_recebimento as number,
-      valor: Number(p.salario_base),
-    }));
+      dia: parcela.dia,
+      valor: parcela.valor,
+    })),
+  );
   const rendaEsperada = incomes.reduce((sum, inc) => sum + inc.valor, 0);
 
   return (

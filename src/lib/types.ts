@@ -282,18 +282,44 @@ export interface ChecklistStatus {
   concluido_em: string | null;
 }
 
-// Dados default de cada pessoa. O salário base é tratado como fluxo
-// recorrente e futuro de entrada — usado no planejamento (Calendário),
-// não somado aos totais reais do Painel para não misturar dinheiro
-// projetado com dinheiro já lançado.
+export type TipoSalario = "mensal" | "quinzenal";
+
+// Dados default de cada pessoa. O salário é tratado como fluxo recorrente
+// e futuro de entrada — usado no planejamento (Calendário e fluxo de
+// caixa), não somado aos totais reais do Painel para não misturar
+// dinheiro projetado com dinheiro já lançado. Pode ser mensal (uma
+// parcela) ou quinzenal (duas parcelas em dias diferentes do mês).
 export interface Profile {
   id: string;
   email: string;
   nome: string | null;
   sobrenome: string | null;
   telefone: string | null;
-  salario_base: number | null;
-  dia_recebimento: number | null;
+  tipo_salario: TipoSalario;
+  salario_valor_1: number | null;
+  salario_dia_1: number | null;
+  salario_valor_2: number | null;
+  salario_dia_2: number | null;
   created_at: string;
   updated_at: string;
+}
+
+export interface SalarioParcela {
+  valor: number;
+  dia: number;
+}
+
+export function salarioParcelas(p: Profile): SalarioParcela[] {
+  const parcelas: SalarioParcela[] = [];
+  if (p.salario_valor_1 && p.salario_dia_1) {
+    parcelas.push({ valor: Number(p.salario_valor_1), dia: p.salario_dia_1 });
+  }
+  if (p.tipo_salario === "quinzenal" && p.salario_valor_2 && p.salario_dia_2) {
+    parcelas.push({ valor: Number(p.salario_valor_2), dia: p.salario_dia_2 });
+  }
+  return parcelas;
+}
+
+export function salarioTotal(p: Profile): number {
+  return salarioParcelas(p).reduce((sum, parcela) => sum + parcela.valor, 0);
 }

@@ -11,7 +11,6 @@ import {
   ListChecksIcon,
   CalendarBlankIcon,
   UploadSimpleIcon,
-  UserCircleIcon,
   CaretLeftIcon,
   CaretRightIcon,
   SignOutIcon,
@@ -27,7 +26,6 @@ const LINKS = [
   { href: "/checklist", label: "Checklist", icon: ListChecksIcon },
   { href: "/calendario", label: "Calendário", icon: CalendarBlankIcon },
   { href: "/importar-extrato", label: "Importar", icon: UploadSimpleIcon },
-  { href: "/perfil", label: "Perfil", icon: UserCircleIcon },
 ];
 
 const STORAGE_KEY = "ninho-sidebar-collapsed";
@@ -97,10 +95,14 @@ export function Sidebar({ userName }: { userName: string }) {
       </nav>
 
       <div className="sidebar-bottom">
-        <div className="sidebar-user">
+        <Link
+          href="/perfil"
+          className={`sidebar-user${pathname.startsWith("/perfil") ? " active" : ""}`}
+          title="Perfil"
+        >
           <span className="sidebar-user-avatar">{userName.charAt(0).toUpperCase()}</span>
           <span className="sidebar-label sidebar-user-name">{userName}</span>
-        </div>
+        </Link>
         <button type="button" className="sidebar-link sidebar-logout" onClick={handleLogout} title="Sair">
           <SignOutIcon size={19} />
           <span className="sidebar-label">Sair</span>

@@ -1,5 +1,11 @@
 import { createClient } from "@/lib/supabase/server";
-import { fetchAllEntries, fetchGoals, fetchChecklistItems, fetchProfiles } from "@/lib/data";
+import {
+  fetchAllEntries,
+  fetchGoals,
+  fetchChecklistItems,
+  fetchChecklistStatus,
+  fetchProfiles,
+} from "@/lib/data";
 import {
   monthOptions,
   filterByMonth,
@@ -14,9 +20,9 @@ import {
   porPessoa,
 } from "@/lib/aggregate";
 import { buildCashFlow } from "@/lib/cashflow";
-import { formatBRL } from "@/lib/format";
-import { categoriaLabel, type Tipo } from "@/lib/types";
-import { personColorClass, personColorHex } from "@/lib/allowlist";
+import { formatBRL, monthLabel } from "@/lib/format";
+import { categoriaLabel, salarioParcelas, type Tipo } from "@/lib/types";
+import { personColorClass, personColorHex, personNameFor } from "@/lib/allowlist";
 import {
   WalletIcon,
   TrendUpIcon,
@@ -32,6 +38,10 @@ import { YearFilter } from "./YearFilter";
 import { PeriodToggle, type Periodo } from "./PeriodToggle";
 import { InsightsCard } from "./InsightsCard";
 import { CashFlowTable } from "./CashFlowTable";
+import { MiniCalendarPanel } from "./MiniCalendarPanel";
+import type { IncomeMarker } from "../calendario/CalendarGrid";
+import { ChecklistItemRow } from "../checklist/ChecklistItemRow";
+import Link from "next/link";
 import { ViewToggle, type Vista } from "@/components/ViewToggle";
 
 // matiz base de cada tipo — as cores das fatias variam a claridade a partir daqui,
@@ -89,20 +99,28 @@ function donutFor(
   };
 }
 
+function currentMonthKey(): string {
+  const now = new Date();
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+}
+
 export default async function DashboardPage({
   searchParams,
 }: {
-  searchParams: Promise<{ mes?: string; ano?: string; vista?: string; periodo?: string }>;
+  searchParams: Promise<{ mes?: string; ano?: string; vista?: string; periodo?: string; cal?: string }>;
 }) {
-  const { mes, ano, vista: vistaParam, periodo: periodoParam } = await searchParams;
+  const { mes, ano, vista: vistaParam, periodo: periodoParam, cal } = await searchParams;
   const vista: Vista = vistaParam === "pessoa" ? "pessoa" : "categoria";
   const periodo: Periodo = periodoParam === "ano" ? "ano" : "mes";
+  const calMes = cal && /^\d{4}-\d{2}$/.test(cal) ? cal : currentMonthKey();
+  const [calYear, calMonth] = calMes.split("-").map(Number);
   const supabase = await createClient();
-  const [allEntries, goals, checklistItems, profiles] = await Promise.all([
+  const [allEntries, goals, checklistItems, profiles, calStatus] = await Promise.all([
     fetchAllEntries(supabase),
     fetchGoals(supabase),
     fetchChecklistItems(supabase),
     fetchProfiles(supabase),
+    fetchChecklistStatus(supabase, calMes),
   ]);
 
   const months = monthOptions(allEntries);
@@ -129,21 +147,36 @@ export default async function DashboardPage({
   const pessoas = porPessoa(filtered);
   const fluxoDeCaixa = periodo === "ano" ? buildCashFlow(allEntries, checklistItems, profiles, selectedYear) : [];
 
+  const calEntries = allEntries.filter((e) => e.date.startsWith(calMes));
+  const calGoals = goals.filter((g) => g.data_alvo?.startsWith(calMes));
+  const calDoneItemIds = new Set(calStatus.filter((s) => s.concluido).map((s) => s.item_id));
+  const calIncomes: IncomeMarker[] = profiles.flatMap((p) =>
+    salarioParcelas(p).map((parcela, i) => ({
+      id: `${p.id}-${i}`,
+      nome: personNameFor(p.email),
+      dia: parcela.dia,
+      valor: parcela.valor,
+    })),
+  );
+
+  const checklistConcluidos = checklistItems.filter((i) => calDoneItemIds.has(i.id)).length;
+
   return (
-    <div>
-      <h2 className="section-title">Painel</h2>
+    <div className="dashboard-layout">
+      <div className="dashboard-main">
+        <h2 className="section-title">Painel</h2>
 
-      {periodo === "mes" && selectedMonth !== "todos" && <InsightsCard mes={selectedMonth} />}
+        {periodo === "mes" && selectedMonth !== "todos" && <InsightsCard mes={selectedMonth} />}
 
-      <ViewToggle vista={vista} />
-      <PeriodToggle periodo={periodo} />
-      {periodo === "ano" ? (
-        <YearFilter years={years} selected={selectedYear} />
-      ) : (
-        <MonthFilter months={months} selected={selectedMonth} />
-      )}
+        <ViewToggle vista={vista} />
+        <PeriodToggle periodo={periodo} />
+        {periodo === "ano" ? (
+          <YearFilter years={years} selected={selectedYear} />
+        ) : (
+          <MonthFilter months={months} selected={selectedMonth} />
+        )}
 
-      <div className="kpi-grid">
+        <div className="kpi-grid">
         <div className="kpi-card">
           <div className="kpi-label">
             <WalletIcon size={15} weight="bold" /> Saldo do período
@@ -248,6 +281,44 @@ export default async function DashboardPage({
             </div>
           </div>
         ))}
+        </div>
+      </div>
+
+      <div className="dashboard-side">
+        <MiniCalendarPanel
+          year={calYear}
+          month={calMonth}
+          entries={calEntries}
+          items={checklistItems}
+          doneItemIds={calDoneItemIds}
+          goals={calGoals}
+          incomes={calIncomes}
+        />
+
+        <div className="mini-checklist card">
+          <div className="mini-checklist-header">
+            <span>Checklist — {monthLabel(calMes)}</span>
+            <Link href="/checklist" className="mini-checklist-link">
+              Ver tudo
+            </Link>
+          </div>
+          <p className="entry-meta">
+            {checklistConcluidos} de {checklistItems.length} concluídos
+          </p>
+          {checklistItems.length === 0 && (
+            <p className="empty-state small">Nenhum item cadastrado ainda.</p>
+          )}
+          <div className="checklist-list mini">
+            {checklistItems.map((item) => (
+              <ChecklistItemRow
+                key={item.id}
+                item={item}
+                mes={calMes}
+                concluido={calDoneItemIds.has(item.id)}
+              />
+            ))}
+          </div>
+        </div>
       </div>
     </div>
   );

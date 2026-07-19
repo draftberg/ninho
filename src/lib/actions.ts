@@ -121,6 +121,7 @@ export async function deleteChecklistItem(id: string) {
   if (error) throw new Error(error.message);
 
   revalidatePath("/checklist");
+  revalidatePath("/dashboard");
 }
 
 export async function toggleChecklistItem(itemId: string, mes: string, concluido: boolean) {
@@ -135,6 +136,7 @@ export async function toggleChecklistItem(itemId: string, mes: string, concluido
   if (error) throw new Error(error.message);
 
   revalidatePath("/checklist");
+  revalidatePath("/dashboard");
 }
 
 export async function upsertProfile(formData: FormData) {
@@ -144,8 +146,11 @@ export async function upsertProfile(formData: FormData) {
   const nome = (formData.get("nome") as string) || null;
   const sobrenome = (formData.get("sobrenome") as string) || null;
   const telefone = (formData.get("telefone") as string) || null;
-  const salarioBaseRaw = formData.get("salario_base") as string;
-  const diaRecebimentoRaw = formData.get("dia_recebimento") as string;
+  const tipoSalario = formData.get("tipo_salario") === "quinzenal" ? "quinzenal" : "mensal";
+  const valor1Raw = formData.get("salario_valor_1") as string;
+  const dia1Raw = formData.get("salario_dia_1") as string;
+  const valor2Raw = formData.get("salario_valor_2") as string;
+  const dia2Raw = formData.get("salario_dia_2") as string;
 
   const { error } = await supabase.from("profiles").upsert(
     {
@@ -153,8 +158,11 @@ export async function upsertProfile(formData: FormData) {
       nome,
       sobrenome,
       telefone,
-      salario_base: salarioBaseRaw ? Number(salarioBaseRaw) : null,
-      dia_recebimento: diaRecebimentoRaw ? Number(diaRecebimentoRaw) : null,
+      tipo_salario: tipoSalario,
+      salario_valor_1: valor1Raw ? Number(valor1Raw) : null,
+      salario_dia_1: dia1Raw ? Number(dia1Raw) : null,
+      salario_valor_2: tipoSalario === "quinzenal" && valor2Raw ? Number(valor2Raw) : null,
+      salario_dia_2: tipoSalario === "quinzenal" && dia2Raw ? Number(dia2Raw) : null,
       updated_at: new Date().toISOString(),
     },
     { onConflict: "email" },
@@ -163,4 +171,5 @@ export async function upsertProfile(formData: FormData) {
 
   revalidatePath("/perfil");
   revalidatePath("/calendario");
+  revalidatePath("/dashboard");
 }

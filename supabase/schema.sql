@@ -66,7 +66,8 @@ create table if not exists checklist_status (
   unique (item_id, mes)
 );
 
--- ---------- perfil (nome, sobrenome, telefone, salário base) ----------
+-- ---------- perfil (nome, sobrenome, telefone, salário) ----------
+-- salário pode ser mensal (1 parcela) ou quinzenal (2 parcelas em dias diferentes)
 
 create table if not exists profiles (
   id uuid primary key default gen_random_uuid(),
@@ -74,8 +75,11 @@ create table if not exists profiles (
   nome text,
   sobrenome text,
   telefone text,
-  salario_base numeric(12, 2),
-  dia_recebimento int check (dia_recebimento between 1 and 31),
+  tipo_salario text not null default 'mensal' check (tipo_salario in ('mensal', 'quinzenal')),
+  salario_valor_1 numeric(12, 2),
+  salario_dia_1 int check (salario_dia_1 between 1 and 31),
+  salario_valor_2 numeric(12, 2),
+  salario_dia_2 int check (salario_dia_2 between 1 and 31),
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );

@@ -1,5 +1,5 @@
 import { filterByMonth, sumByTipo, composicaoPorCategoria } from "@/lib/aggregate";
-import { categoriaLabel, type ChecklistItem, type Entry, type Profile } from "@/lib/types";
+import { categoriaLabel, salarioTotal, type ChecklistItem, type Entry, type Profile } from "@/lib/types";
 import { monthLabel, todayISO } from "@/lib/format";
 
 export interface MonthColumn {
@@ -26,7 +26,7 @@ export function buildCashFlow(
   year: string,
 ): MonthColumn[] {
   const currentMonthKey = todayISO().slice(0, 7);
-  const rendaPrevista = profiles.reduce((sum, p) => sum + Number(p.salario_base ?? 0), 0);
+  const rendaPrevista = profiles.reduce((sum, p) => sum + salarioTotal(p), 0);
   const gastosPrevistos = checklistItems.reduce((sum, i) => sum + Number(i.valor_esperado ?? 0), 0);
 
   const antes = allEntries.filter((e) => e.date < `${year}-01-01`);

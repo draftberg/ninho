@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { fetchProfiles } from "@/lib/data";
 import { formatBRL } from "@/lib/format";
+import { salarioParcelas } from "@/lib/types";
 import { personColorClass, personNameFor } from "@/lib/allowlist";
 import { ProfileForm } from "./ProfileForm";
 
@@ -14,6 +15,7 @@ export default async function PerfilPage() {
   const email = user?.email ?? "";
   const own = profiles.find((p) => p.email.toLowerCase() === email.toLowerCase()) ?? null;
   const partner = profiles.find((p) => p.email.toLowerCase() !== email.toLowerCase()) ?? null;
+  const partnerParcelas = partner ? salarioParcelas(partner) : [];
 
   return (
     <div>
@@ -28,10 +30,12 @@ export default async function PerfilPage() {
           <p className="entry-meta">
             {[partner.nome, partner.sobrenome].filter(Boolean).join(" ") || "Sem dados cadastrados"}
           </p>
-          {partner.salario_base != null && (
+          {partnerParcelas.length > 0 && (
             <p className="entry-meta">
-              Salário base: <span className="mono">{formatBRL(partner.salario_base)}</span>
-              {partner.dia_recebimento && ` (dia ${partner.dia_recebimento})`}
+              Salário ({partner.tipo_salario}):{" "}
+              {partnerParcelas
+                .map((p) => `${formatBRL(p.valor)} (dia ${p.dia})`)
+                .join(" + ")}
             </p>
           )}
         </div>

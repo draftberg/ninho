@@ -2,11 +2,12 @@
 
 import { useState, useTransition } from "react";
 import { upsertProfile } from "@/lib/actions";
-import type { Profile } from "@/lib/types";
+import type { Profile, TipoSalario } from "@/lib/types";
 
 export function ProfileForm({ email, profile }: { email: string; profile: Profile | null }) {
   const [isPending, startTransition] = useTransition();
   const [saved, setSaved] = useState(false);
+  const [tipoSalario, setTipoSalario] = useState<TipoSalario>(profile?.tipo_salario ?? "mensal");
 
   function handleSubmit(formData: FormData) {
     setSaved(false);
@@ -50,31 +51,85 @@ export function ProfileForm({ email, profile }: { email: string; profile: Profil
       </div>
 
       <div className="field">
-        <label htmlFor="salario_base">Salário base (R$)</label>
-        <input
-          id="salario_base"
-          name="salario_base"
-          type="number"
-          step="0.01"
-          min="0"
-          placeholder="0,00"
-          className="valor-input"
-          defaultValue={profile?.salario_base ?? ""}
-        />
+        <label>Salário</label>
+        <div className="subcategoria-grid">
+          <button
+            type="button"
+            className={tipoSalario === "mensal" ? "active" : ""}
+            onClick={() => setTipoSalario("mensal")}
+          >
+            Mensal
+          </button>
+          <button
+            type="button"
+            className={tipoSalario === "quinzenal" ? "active" : ""}
+            onClick={() => setTipoSalario("quinzenal")}
+          >
+            Quinzenal
+          </button>
+        </div>
+        <input type="hidden" name="tipo_salario" value={tipoSalario} />
       </div>
 
-      <div className="field">
-        <label htmlFor="dia_recebimento">Dia de recebimento (opcional)</label>
-        <input
-          id="dia_recebimento"
-          name="dia_recebimento"
-          type="number"
-          min="1"
-          max="31"
-          placeholder="Ex: 5"
-          defaultValue={profile?.dia_recebimento ?? ""}
-        />
+      <div className="salario-parcela">
+        <div className="field">
+          <label htmlFor="salario_valor_1">
+            {tipoSalario === "quinzenal" ? "1ª parcela (R$)" : "Valor (R$)"}
+          </label>
+          <input
+            id="salario_valor_1"
+            name="salario_valor_1"
+            type="number"
+            step="0.01"
+            min="0"
+            placeholder="0,00"
+            className="valor-input"
+            defaultValue={profile?.salario_valor_1 ?? ""}
+          />
+        </div>
+        <div className="field">
+          <label htmlFor="salario_dia_1">Dia</label>
+          <input
+            id="salario_dia_1"
+            name="salario_dia_1"
+            type="number"
+            min="1"
+            max="31"
+            placeholder="Ex: 5"
+            defaultValue={profile?.salario_dia_1 ?? ""}
+          />
+        </div>
       </div>
+
+      {tipoSalario === "quinzenal" && (
+        <div className="salario-parcela">
+          <div className="field">
+            <label htmlFor="salario_valor_2">2ª parcela (R$)</label>
+            <input
+              id="salario_valor_2"
+              name="salario_valor_2"
+              type="number"
+              step="0.01"
+              min="0"
+              placeholder="0,00"
+              className="valor-input"
+              defaultValue={profile?.salario_valor_2 ?? ""}
+            />
+          </div>
+          <div className="field">
+            <label htmlFor="salario_dia_2">Dia</label>
+            <input
+              id="salario_dia_2"
+              name="salario_dia_2"
+              type="number"
+              min="1"
+              max="31"
+              placeholder="Ex: 20"
+              defaultValue={profile?.salario_dia_2 ?? ""}
+            />
+          </div>
+        </div>
+      )}
 
       <button type="submit" className="primary-button" disabled={isPending}>
         {isPending ? "Salvando..." : "Salvar"}
