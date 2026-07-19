@@ -93,7 +93,7 @@ export async function extractTransactions(formData: FormData): Promise<Extractio
   const trimmed = text.slice(0, 15000);
 
   const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
-  const model = process.env.GEMINI_MODEL || "gemini-2.5-flash";
+  const model = process.env.GEMINI_MODEL || "gemini-flash-latest";
 
   const prompt = `Você recebe abaixo o conteúdo de um extrato financeiro (PDF/CSV/TXT convertido em texto).
 Extraia cada transação e classifique cada uma usando exatamente esta árvore de tipo → categoria → subcategoria

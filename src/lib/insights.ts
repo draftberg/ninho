@@ -90,7 +90,7 @@ Com base SOMENTE nesses números (não invente valores), gere:
 Responda em português do Brasil, tom direto e acolhedor, sem jargão financeiro complicado.`;
 
   const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
-  const model = process.env.GEMINI_MODEL || "gemini-2.5-flash";
+  const model = process.env.GEMINI_MODEL || "gemini-flash-latest";
 
   try {
     const response = await ai.models.generateContent({
@@ -114,7 +114,6 @@ Responda em português do Brasil, tom direto e acolhedor, sem jargão financeiro
     return { bullets, analysis };
   } catch (err) {
     console.error("[insights] falha ao gerar análise:", err);
-    const detail = err instanceof Error ? err.message : String(err);
-    return { error: `Não foi possível gerar a análise agora: ${detail}` };
+    return { error: "Não foi possível gerar a análise agora. Tente novamente em instantes." };
   }
 }
