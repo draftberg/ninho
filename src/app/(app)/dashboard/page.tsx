@@ -114,15 +114,15 @@ export default async function DashboardPage({
             {formatBRL(saldo)}
           </div>
         </div>
-        <div className="kpi-card">
+        <div className="kpi-card entradas">
           <div className="kpi-label">Entradas</div>
           <div className="kpi-value">{formatBRL(totalEntrada)}</div>
         </div>
-        <div className="kpi-card">
+        <div className="kpi-card saidas">
           <div className="kpi-label">Saídas</div>
           <div className="kpi-value">{formatBRL(totalSaida)}</div>
         </div>
-        <div className="kpi-card">
+        <div className="kpi-card investido">
           <div className="kpi-label">Investido</div>
           <div className="kpi-value">{formatBRL(totalInvestimento)}</div>
         </div>

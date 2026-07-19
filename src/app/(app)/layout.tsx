@@ -1,8 +1,7 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { personNameFor } from "@/lib/allowlist";
-import { LogoutButton } from "@/components/LogoutButton";
-import { NavLinks } from "@/components/NavLinks";
+import { Sidebar } from "@/components/Sidebar";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const supabase = await createClient();
@@ -16,15 +15,8 @@ export default async function AppLayout({ children }: { children: React.ReactNod
 
   return (
     <div className="app-shell">
-      <header className="app-header">
-        <span className="brand">Ninho</span>
-        <span className="user-pill">
-          {personNameFor(user.email)}
-          <LogoutButton />
-        </span>
-      </header>
+      <Sidebar userName={personNameFor(user.email)} />
       <main className="app-main">{children}</main>
-      <NavLinks />
     </div>
   );
 }
