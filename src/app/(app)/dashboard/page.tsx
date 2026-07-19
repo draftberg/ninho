@@ -3,11 +3,14 @@ import { fetchAllEntries, fetchGoals } from "@/lib/data";
 import {
   monthOptions,
   filterByMonth,
+  yearOptions,
+  filterByYear,
   sumByTipo,
   totalByGoal,
   composicaoPorCategoria,
   composicaoPorPessoa,
   evolucaoUltimosMeses,
+  evolucaoAnoInteiro,
   porPessoa,
 } from "@/lib/aggregate";
 import { formatBRL } from "@/lib/format";
@@ -24,6 +27,9 @@ import {
 import { DonutChart } from "@/components/charts/DonutChart";
 import { EvolutionBarChart } from "@/components/charts/EvolutionBarChart";
 import { MonthFilter } from "./MonthFilter";
+import { YearFilter } from "./YearFilter";
+import { PeriodToggle, type Periodo } from "./PeriodToggle";
+import { InsightsCard } from "./InsightsCard";
 import { ViewToggle, type Vista } from "@/components/ViewToggle";
 
 // matiz base de cada tipo — as cores das fatias variam a claridade a partir daqui,
@@ -84,16 +90,21 @@ function donutFor(
 export default async function DashboardPage({
   searchParams,
 }: {
-  searchParams: Promise<{ mes?: string; vista?: string }>;
+  searchParams: Promise<{ mes?: string; ano?: string; vista?: string; periodo?: string }>;
 }) {
-  const { mes, vista: vistaParam } = await searchParams;
+  const { mes, ano, vista: vistaParam, periodo: periodoParam } = await searchParams;
   const vista: Vista = vistaParam === "pessoa" ? "pessoa" : "categoria";
+  const periodo: Periodo = periodoParam === "ano" ? "ano" : "mes";
   const supabase = await createClient();
   const [allEntries, goals] = await Promise.all([fetchAllEntries(supabase), fetchGoals(supabase)]);
 
   const months = monthOptions(allEntries);
+  const years = yearOptions(allEntries);
   const selectedMonth = mes && (mes === "todos" || months.includes(mes)) ? mes : (months[0] ?? "todos");
-  const filtered = filterByMonth(allEntries, selectedMonth);
+  const selectedYear = ano && years.includes(ano) ? ano : (years[0] ?? String(new Date().getFullYear()));
+
+  const filtered =
+    periodo === "ano" ? filterByYear(allEntries, selectedYear) : filterByMonth(allEntries, selectedMonth);
 
   const totalEntrada = sumByTipo(filtered, "entrada");
   const totalSaida = sumByTipo(filtered, "saida");
@@ -106,15 +117,23 @@ export default async function DashboardPage({
   const donutSaida = donutFor(filtered, "saida", vista);
   const donutInvestimento = donutFor(filtered, "investimento", vista);
 
-  const evolucao = evolucaoUltimosMeses(allEntries);
+  const evolucao =
+    periodo === "ano" ? evolucaoAnoInteiro(allEntries, selectedYear) : evolucaoUltimosMeses(allEntries);
   const pessoas = porPessoa(filtered);
 
   return (
     <div>
       <h2 className="section-title">Painel</h2>
 
+      {periodo === "mes" && selectedMonth !== "todos" && <InsightsCard mes={selectedMonth} />}
+
       <ViewToggle vista={vista} />
-      <MonthFilter months={months} selected={selectedMonth} />
+      <PeriodToggle periodo={periodo} />
+      {periodo === "ano" ? (
+        <YearFilter years={years} selected={selectedYear} />
+      ) : (
+        <MonthFilter months={months} selected={selectedMonth} />
+      )}
 
       <div className="kpi-grid">
         <div className="kpi-card">
@@ -177,7 +196,9 @@ export default async function DashboardPage({
           />
         </div>
         <div className="chart-card">
-          <div className="section-title">Entradas x Saídas (últimos meses)</div>
+          <div className="section-title">
+            {periodo === "ano" ? `Entradas x Saídas (${selectedYear})` : "Entradas x Saídas (últimos meses)"}
+          </div>
           <EvolutionBarChart
             labels={evolucao.labels}
             entradas={evolucao.entradas}

@@ -11,6 +11,35 @@ export function filterByMonth(entries: Entry[], month: string): Entry[] {
   return entries.filter((e) => monthKeyOf(e.date) === month);
 }
 
+export function yearOptions(entries: Entry[]): string[] {
+  const set = new Set(entries.map((e) => e.date.slice(0, 4)));
+  return Array.from(set).sort((a, b) => (a < b ? 1 : -1));
+}
+
+export function filterByYear(entries: Entry[], year: string): Entry[] {
+  return entries.filter((e) => e.date.startsWith(year));
+}
+
+export function evolucaoAnoInteiro(
+  entries: Entry[],
+  year: string,
+): { labels: string[]; entradas: number[]; saidas: number[] } {
+  const keys = Array.from({ length: 12 }, (_, i) => `${year}-${String(i + 1).padStart(2, "0")}`);
+
+  const entradas = keys.map((key) =>
+    entries
+      .filter((e) => e.tipo === "entrada" && monthKeyOf(e.date) === key)
+      .reduce((sum, e) => sum + Number(e.valor), 0),
+  );
+  const saidas = keys.map((key) =>
+    entries
+      .filter((e) => e.tipo === "saida" && monthKeyOf(e.date) === key)
+      .reduce((sum, e) => sum + Number(e.valor), 0),
+  );
+
+  return { labels: keys.map(monthLabel), entradas, saidas };
+}
+
 export function sumByTipo(entries: Entry[], tipo: Tipo): number {
   return entries.filter((e) => e.tipo === tipo).reduce((sum, e) => sum + Number(e.valor), 0);
 }

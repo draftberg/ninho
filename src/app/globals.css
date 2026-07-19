@@ -1140,3 +1140,246 @@ a {
 .review-table td:nth-child(6) input {
   width: 150px;
 }
+
+/* ---------- Insights da IA (Painel) ---------- */
+
+.insights-card {
+  background: linear-gradient(120deg, var(--color-primary) 0%, var(--color-primary-dark) 100%);
+  color: #fff;
+  border-radius: 1.2rem;
+  padding: 1.1rem 1.25rem;
+  margin-bottom: 1.25rem;
+}
+
+.insights-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.insights-title {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-weight: 700;
+  color: var(--color-gold-light);
+}
+
+.insights-card .form-message.error {
+  color: #ffd7c9;
+}
+
+.insights-bullets {
+  list-style: none;
+  margin: 0.85rem 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.insights-bullets li {
+  font-size: 0.9rem;
+  padding-left: 1rem;
+  position: relative;
+  line-height: 1.4;
+}
+
+.insights-bullets li::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0.5em;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--color-gold-light);
+}
+
+.insights-more {
+  margin-top: 0.75rem;
+  background: rgba(255, 255, 255, 0.12);
+  border: none;
+  color: #fff;
+  border-radius: 0.7rem;
+  padding: 0.4rem 0.8rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.insights-more:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+/* ---------- Modal ---------- */
+
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(23, 22, 28, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  z-index: 100;
+}
+
+.modal-box {
+  background: var(--color-card);
+  border-radius: 1.2rem;
+  max-width: 520px;
+  width: 100%;
+  max-height: 80vh;
+  overflow-y: auto;
+  padding: 1.25rem;
+}
+
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.75rem;
+}
+
+.modal-header h3 {
+  margin: 0;
+}
+
+.modal-close {
+  border: none;
+  background: var(--color-bg);
+  border-radius: 50%;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: var(--color-ink-muted);
+}
+
+.modal-body p {
+  margin: 0 0 0.85rem;
+  line-height: 1.55;
+  color: var(--color-ink);
+}
+
+.modal-body p:last-child {
+  margin-bottom: 0;
+}
+
+/* ---------- Calendário ---------- */
+
+.calendar-weekdays {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 0.4rem;
+  margin-bottom: 0.4rem;
+}
+
+.calendar-weekday {
+  text-align: center;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--color-ink-muted);
+  text-transform: uppercase;
+}
+
+.calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 0.4rem;
+}
+
+.calendar-cell {
+  background: var(--color-card);
+  border: 1px solid var(--color-border);
+  border-radius: 0.8rem;
+  padding: 0.5rem;
+  min-height: 92px;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.calendar-cell.empty {
+  background: transparent;
+  border: none;
+}
+
+.calendar-cell.today {
+  border-color: var(--color-gold);
+  box-shadow: 0 0 0 1px var(--color-gold);
+}
+
+.calendar-daynum {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--color-ink-muted);
+}
+
+.calendar-totals {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+}
+
+.calendar-total.entrada {
+  color: var(--color-pastel-entrada-ink);
+}
+
+.calendar-total.saida {
+  color: var(--color-pastel-saida-ink);
+}
+
+.calendar-chips {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.calendar-chip {
+  font-size: 0.65rem;
+  font-weight: 600;
+  padding: 0.1rem 0.4rem;
+  border-radius: 999px;
+  background: var(--color-pastel-reserva);
+  color: var(--color-pastel-reserva-ink);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: flex;
+  align-items: center;
+  gap: 0.2rem;
+}
+
+.calendar-chip.done {
+  background: var(--color-pastel-entrada);
+  color: var(--color-pastel-entrada-ink);
+  text-decoration: line-through;
+}
+
+.calendar-chip.goal {
+  background: var(--color-pastel-investimento);
+  color: var(--color-pastel-investimento-ink);
+}
+
+@media (max-width: 720px) {
+  .calendar-weekday {
+    font-size: 0.6rem;
+  }
+
+  .calendar-cell {
+    min-height: 64px;
+    padding: 0.3rem;
+  }
+
+  .calendar-chip {
+    font-size: 0.55rem;
+  }
+}

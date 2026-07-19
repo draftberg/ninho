@@ -10,7 +10,7 @@ function shiftMonth(mes: string, delta: number): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
 }
 
-export function ChecklistMonthNav({ mes }: { mes: string }) {
+export function MonthNav({ mes }: { mes: string }) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();

@@ -1,7 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { fetchChecklistItems, fetchChecklistStatus } from "@/lib/data";
 import { formatBRL, monthLabel } from "@/lib/format";
-import { ChecklistMonthNav } from "./ChecklistMonthNav";
+import { MonthNav } from "@/components/MonthNav";
 import { ChecklistItemRow } from "./ChecklistItemRow";
 import { CreateChecklistItemForm } from "./CreateChecklistItemForm";
 
@@ -34,7 +34,7 @@ export default async function ChecklistPage({
   return (
     <div>
       <h2 className="section-title">Checklist mensal</h2>
-      <ChecklistMonthNav mes={mes} />
+      <MonthNav mes={mes} />
 
       <div className="checklist-summary card">
         <span>

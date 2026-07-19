@@ -9,6 +9,7 @@ import {
   ClockCounterClockwiseIcon,
   PiggyBankIcon,
   ListChecksIcon,
+  CalendarBlankIcon,
   UploadSimpleIcon,
   CaretLeftIcon,
   CaretRightIcon,
@@ -23,6 +24,7 @@ const LINKS = [
   { href: "/historico", label: "Histórico", icon: ClockCounterClockwiseIcon },
   { href: "/reserva", label: "Reserva", icon: PiggyBankIcon },
   { href: "/checklist", label: "Checklist", icon: ListChecksIcon },
+  { href: "/calendario", label: "Calendário", icon: CalendarBlankIcon },
   { href: "/importar-extrato", label: "Importar", icon: UploadSimpleIcon },
 ];
 
