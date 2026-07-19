@@ -1383,3 +1383,108 @@ a {
     font-size: 0.55rem;
   }
 }
+
+/* ---------- Perfil ---------- */
+
+.profile-form input:disabled {
+  background: var(--color-bg);
+  color: var(--color-ink-muted);
+}
+
+.partner-card {
+  max-width: 480px;
+  margin-top: 1.25rem;
+}
+
+.partner-card h3 {
+  margin-bottom: 0.35rem;
+}
+
+.calendar-chip.income {
+  background: var(--color-pastel-entrada);
+  color: var(--color-pastel-entrada-ink);
+}
+
+/* ---------- Fluxo de caixa mensal ---------- */
+
+.saldo-positivo {
+  color: var(--color-pastel-saldo-ink);
+}
+
+.saldo-negativo {
+  color: var(--color-pastel-saida-ink);
+}
+
+.cashflow-hint {
+  margin: -0.5rem 0 0.85rem;
+}
+
+.cashflow-wrap {
+  overflow-x: auto;
+  border: 1px solid var(--color-border);
+  border-radius: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.cashflow-table {
+  border-collapse: collapse;
+  width: 100%;
+  font-size: 0.82rem;
+}
+
+.cashflow-table th,
+.cashflow-table td {
+  padding: 0.5rem 0.75rem;
+  text-align: right;
+  white-space: nowrap;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.cashflow-table th:first-child,
+.cashflow-table td:first-child {
+  text-align: left;
+  position: sticky;
+  left: 0;
+  background: var(--color-card);
+  font-weight: 600;
+  color: var(--color-ink-muted);
+}
+
+.cashflow-table thead th {
+  background: var(--color-bg);
+  font-weight: 700;
+  color: var(--color-ink);
+}
+
+.cashflow-table thead th.projetado {
+  color: var(--color-ink-muted);
+}
+
+.cashflow-badge {
+  display: block;
+  font-size: 0.6rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--color-gold);
+}
+
+.cashflow-row-muted td {
+  color: var(--color-ink-muted);
+}
+
+.cashflow-row-strong td {
+  font-weight: 700;
+}
+
+.cashflow-row-strong td.entrada {
+  color: var(--color-pastel-entrada-ink);
+}
+
+.cashflow-row-strong td.saida {
+  color: var(--color-pastel-saida-ink);
+}
+
+.cashflow-row-total td {
+  font-weight: 700;
+  background: var(--color-bg);
+}

@@ -1,7 +1,14 @@
 import type { ChecklistItem, Entry, Goal } from "@/lib/types";
-import { FlagIcon } from "@phosphor-icons/react/dist/ssr";
+import { FlagIcon, MoneyIcon } from "@phosphor-icons/react/dist/ssr";
 
 const WEEKDAYS = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
+
+export interface IncomeMarker {
+  id: string;
+  nome: string;
+  dia: number;
+  valor: number;
+}
 
 function pad(n: number): string {
   return String(n).padStart(2, "0");
@@ -18,6 +25,7 @@ export function CalendarGrid({
   items,
   doneItemIds,
   goals,
+  incomes,
 }: {
   year: number;
   month: number;
@@ -25,6 +33,7 @@ export function CalendarGrid({
   items: ChecklistItem[];
   doneItemIds: Set<string>;
   goals: Goal[];
+  incomes: IncomeMarker[];
 }) {
   const daysInMonth = new Date(year, month, 0).getDate();
   const firstWeekday = new Date(year, month - 1, 1).getDay();
@@ -57,6 +66,7 @@ export function CalendarGrid({
             .reduce((sum, e) => sum + Number(e.valor), 0);
           const dayItems = items.filter((it) => it.dia_vencimento === day);
           const dayGoals = goals.filter((g) => g.data_alvo === dateStr);
+          const dayIncomes = incomes.filter((inc) => inc.dia === day);
 
           const isToday = new Date().toISOString().slice(0, 10) === dateStr;
 
@@ -71,6 +81,15 @@ export function CalendarGrid({
                   {saidaSum > 0 && (
                     <span className="calendar-total saida">-R$ {formatCompact(saidaSum)}</span>
                   )}
+                </div>
+              )}
+              {dayIncomes.length > 0 && (
+                <div className="calendar-chips">
+                  {dayIncomes.map((inc) => (
+                    <span key={inc.id} className="calendar-chip income">
+                      <MoneyIcon size={10} weight="fill" /> {inc.nome} R$ {formatCompact(inc.valor)}
+                    </span>
+                  ))}
                 </div>
               )}
               {dayItems.length > 0 && (

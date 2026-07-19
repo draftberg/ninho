@@ -11,6 +11,7 @@ import {
   ListChecksIcon,
   CalendarBlankIcon,
   UploadSimpleIcon,
+  UserCircleIcon,
   CaretLeftIcon,
   CaretRightIcon,
   SignOutIcon,
@@ -26,6 +27,7 @@ const LINKS = [
   { href: "/checklist", label: "Checklist", icon: ListChecksIcon },
   { href: "/calendario", label: "Calendário", icon: CalendarBlankIcon },
   { href: "/importar-extrato", label: "Importar", icon: UploadSimpleIcon },
+  { href: "/perfil", label: "Perfil", icon: UserCircleIcon },
 ];
 
 const STORAGE_KEY = "ninho-sidebar-collapsed";

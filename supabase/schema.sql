@@ -66,6 +66,20 @@ create table if not exists checklist_status (
   unique (item_id, mes)
 );
 
+-- ---------- perfil (nome, sobrenome, telefone, salário base) ----------
+
+create table if not exists profiles (
+  id uuid primary key default gen_random_uuid(),
+  email text not null unique,
+  nome text,
+  sobrenome text,
+  telefone text,
+  salario_base numeric(12, 2),
+  dia_recebimento int check (dia_recebimento between 1 and 31),
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
 -- ---------- segurança: apenas as 2 contas do casal ----------
 -- Ajuste os e-mails abaixo para corresponder aos mesmos definidos em
 -- src/lib/allowlist.ts. A allowlist é checada em dois lugares por
@@ -83,6 +97,7 @@ alter table entries enable row level security;
 alter table goals enable row level security;
 alter table checklist_items enable row level security;
 alter table checklist_status enable row level security;
+alter table profiles enable row level security;
 
 drop policy if exists "casal pode ver lancamentos" on entries;
 create policy "casal pode ver lancamentos" on entries
@@ -135,3 +150,18 @@ create policy "casal pode gravar checklist status" on checklist_status
 drop policy if exists "casal pode atualizar checklist status" on checklist_status;
 create policy "casal pode atualizar checklist status" on checklist_status
   for update using (is_allowed_email()) with check (is_allowed_email());
+
+-- qualquer um do casal pode ver os dois perfis (visão combinada do planejamento)
+drop policy if exists "casal pode ver perfis" on profiles;
+create policy "casal pode ver perfis" on profiles
+  for select using (is_allowed_email());
+
+-- cada um só pode criar/editar o próprio perfil
+drop policy if exists "cada um cria o proprio perfil" on profiles;
+create policy "cada um cria o proprio perfil" on profiles
+  for insert with check (is_allowed_email() and email = auth.email());
+
+drop policy if exists "cada um edita o proprio perfil" on profiles;
+create policy "cada um edita o proprio perfil" on profiles
+  for update using (is_allowed_email() and email = auth.email())
+  with check (is_allowed_email() and email = auth.email());

@@ -1,5 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
-import { fetchAllEntries, fetchGoals } from "@/lib/data";
+import { fetchAllEntries, fetchGoals, fetchChecklistItems, fetchProfiles } from "@/lib/data";
 import {
   monthOptions,
   filterByMonth,
@@ -13,6 +13,7 @@ import {
   evolucaoAnoInteiro,
   porPessoa,
 } from "@/lib/aggregate";
+import { buildCashFlow } from "@/lib/cashflow";
 import { formatBRL } from "@/lib/format";
 import { categoriaLabel, type Tipo } from "@/lib/types";
 import { personColorClass, personColorHex } from "@/lib/allowlist";
@@ -30,6 +31,7 @@ import { MonthFilter } from "./MonthFilter";
 import { YearFilter } from "./YearFilter";
 import { PeriodToggle, type Periodo } from "./PeriodToggle";
 import { InsightsCard } from "./InsightsCard";
+import { CashFlowTable } from "./CashFlowTable";
 import { ViewToggle, type Vista } from "@/components/ViewToggle";
 
 // matiz base de cada tipo — as cores das fatias variam a claridade a partir daqui,
@@ -96,7 +98,12 @@ export default async function DashboardPage({
   const vista: Vista = vistaParam === "pessoa" ? "pessoa" : "categoria";
   const periodo: Periodo = periodoParam === "ano" ? "ano" : "mes";
   const supabase = await createClient();
-  const [allEntries, goals] = await Promise.all([fetchAllEntries(supabase), fetchGoals(supabase)]);
+  const [allEntries, goals, checklistItems, profiles] = await Promise.all([
+    fetchAllEntries(supabase),
+    fetchGoals(supabase),
+    fetchChecklistItems(supabase),
+    fetchProfiles(supabase),
+  ]);
 
   const months = monthOptions(allEntries);
   const years = yearOptions(allEntries);
@@ -120,6 +127,7 @@ export default async function DashboardPage({
   const evolucao =
     periodo === "ano" ? evolucaoAnoInteiro(allEntries, selectedYear) : evolucaoUltimosMeses(allEntries);
   const pessoas = porPessoa(filtered);
+  const fluxoDeCaixa = periodo === "ano" ? buildCashFlow(allEntries, checklistItems, profiles, selectedYear) : [];
 
   return (
     <div>
@@ -206,6 +214,17 @@ export default async function DashboardPage({
           />
         </div>
       </div>
+
+      {periodo === "ano" && (
+        <>
+          <div className="section-title">Fluxo de caixa mensal — {selectedYear}</div>
+          <p className="entry-meta cashflow-hint">
+            Meses futuros sem lançamentos usam o salário base do perfil e os itens do checklist como
+            previsão.
+          </p>
+          <CashFlowTable columns={fluxoDeCaixa} />
+        </>
+      )}
 
       <div className="section-title">Por pessoa</div>
       <div className="person-breakdown">

@@ -281,3 +281,19 @@ export interface ChecklistStatus {
   concluido: boolean;
   concluido_em: string | null;
 }
+
+// Dados default de cada pessoa. O salário base é tratado como fluxo
+// recorrente e futuro de entrada — usado no planejamento (Calendário),
+// não somado aos totais reais do Painel para não misturar dinheiro
+// projetado com dinheiro já lançado.
+export interface Profile {
+  id: string;
+  email: string;
+  nome: string | null;
+  sobrenome: string | null;
+  telefone: string | null;
+  salario_base: number | null;
+  dia_recebimento: number | null;
+  created_at: string;
+  updated_at: string;
+}

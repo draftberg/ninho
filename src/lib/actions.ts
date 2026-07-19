@@ -12,7 +12,7 @@ async function currentAuthor() {
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  return { supabase, autor: personNameFor(user?.email) };
+  return { supabase, autor: personNameFor(user?.email), email: user?.email ?? null };
 }
 
 export async function addEntry(formData: FormData) {
@@ -135,4 +135,32 @@ export async function toggleChecklistItem(itemId: string, mes: string, concluido
   if (error) throw new Error(error.message);
 
   revalidatePath("/checklist");
+}
+
+export async function upsertProfile(formData: FormData) {
+  const { supabase, email } = await currentAuthor();
+  if (!email) throw new Error("Usuário não autenticado.");
+
+  const nome = (formData.get("nome") as string) || null;
+  const sobrenome = (formData.get("sobrenome") as string) || null;
+  const telefone = (formData.get("telefone") as string) || null;
+  const salarioBaseRaw = formData.get("salario_base") as string;
+  const diaRecebimentoRaw = formData.get("dia_recebimento") as string;
+
+  const { error } = await supabase.from("profiles").upsert(
+    {
+      email,
+      nome,
+      sobrenome,
+      telefone,
+      salario_base: salarioBaseRaw ? Number(salarioBaseRaw) : null,
+      dia_recebimento: diaRecebimentoRaw ? Number(diaRecebimentoRaw) : null,
+      updated_at: new Date().toISOString(),
+    },
+    { onConflict: "email" },
+  );
+  if (error) throw new Error(error.message);
+
+  revalidatePath("/perfil");
+  revalidatePath("/calendario");
 }
