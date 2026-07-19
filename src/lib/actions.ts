@@ -78,6 +78,7 @@ export async function createGoal(formData: FormData) {
   if (error) throw new Error(error.message);
 
   revalidatePath("/reserva");
+  revalidatePath("/lancar");
 }
 
 export async function updateGoalTarget(formData: FormData) {
