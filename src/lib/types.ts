@@ -259,3 +259,25 @@ export interface Goal {
 }
 
 export type NewGoal = Omit<Goal, "id" | "created_at">;
+
+// Item recorrente do checklist mensal (conta a pagar, aporte a lembrar, etc.).
+// A conclusão de cada item é rastreada por mês em ChecklistStatus, então o
+// mesmo item "desmarca" automaticamente no mês seguinte.
+export interface ChecklistItem {
+  id: string;
+  nome: string;
+  valor_esperado: number | null;
+  dia_vencimento: number | null;
+  ativo: boolean;
+  created_at: string;
+}
+
+export type NewChecklistItem = Omit<ChecklistItem, "id" | "created_at" | "ativo">;
+
+export interface ChecklistStatus {
+  id: string;
+  item_id: string;
+  mes: string;
+  concluido: boolean;
+  concluido_em: string | null;
+}

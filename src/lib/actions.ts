@@ -98,3 +98,41 @@ export async function updateGoalTarget(formData: FormData) {
   revalidatePath("/reserva");
   revalidatePath("/dashboard");
 }
+
+export async function createChecklistItem(formData: FormData) {
+  const { supabase } = await currentAuthor();
+  const nome = formData.get("nome") as string;
+  const valorEsperadoRaw = formData.get("valor_esperado") as string;
+  const diaVencimentoRaw = formData.get("dia_vencimento") as string;
+
+  const { error } = await supabase.from("checklist_items").insert({
+    nome,
+    valor_esperado: valorEsperadoRaw ? Number(valorEsperadoRaw) : null,
+    dia_vencimento: diaVencimentoRaw ? Number(diaVencimentoRaw) : null,
+  });
+  if (error) throw new Error(error.message);
+
+  revalidatePath("/checklist");
+}
+
+export async function deleteChecklistItem(id: string) {
+  const { supabase } = await currentAuthor();
+  const { error } = await supabase.from("checklist_items").delete().eq("id", id);
+  if (error) throw new Error(error.message);
+
+  revalidatePath("/checklist");
+}
+
+export async function toggleChecklistItem(itemId: string, mes: string, concluido: boolean) {
+  const { supabase } = await currentAuthor();
+
+  const { error } = await supabase
+    .from("checklist_status")
+    .upsert(
+      { item_id: itemId, mes, concluido, concluido_em: concluido ? new Date().toISOString() : null },
+      { onConflict: "item_id,mes" },
+    );
+  if (error) throw new Error(error.message);
+
+  revalidatePath("/checklist");
+}

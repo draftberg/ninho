@@ -1,5 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import type { Entry, Goal } from "@/lib/types";
+import type { ChecklistItem, ChecklistStatus, Entry, Goal } from "@/lib/types";
 
 export async function fetchAllEntries(supabase: SupabaseClient): Promise<Entry[]> {
   const { data, error } = await supabase
@@ -20,4 +20,25 @@ export async function fetchGoals(supabase: SupabaseClient): Promise<Goal[]> {
 
   if (error) throw error;
   return data as Goal[];
+}
+
+export async function fetchChecklistItems(supabase: SupabaseClient): Promise<ChecklistItem[]> {
+  const { data, error } = await supabase
+    .from("checklist_items")
+    .select("*")
+    .eq("ativo", true)
+    .order("dia_vencimento", { ascending: true, nullsFirst: false })
+    .order("nome", { ascending: true });
+
+  if (error) throw error;
+  return data as ChecklistItem[];
+}
+
+export async function fetchChecklistStatus(
+  supabase: SupabaseClient,
+  mes: string,
+): Promise<ChecklistStatus[]> {
+  const { data, error } = await supabase.from("checklist_status").select("*").eq("mes", mes);
+  if (error) throw error;
+  return data as ChecklistStatus[];
 }

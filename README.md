@@ -51,6 +51,7 @@ src/app/
   (app)/lancar/          formulário de novo lançamento
   (app)/historico/       lista de lançamentos com filtros e exclusão
   (app)/reserva/          metas (reserva do bebê, viagens, planos...), progresso e ilustração do ninho
+  (app)/checklist/        checklist mensal de contas/aportes a lembrar de pagar ou guardar
   (app)/importar-extrato/ upload de extrato + categorização via IA (Gemini)
 src/lib/
   supabase/              clientes Supabase (browser, server, middleware)

@@ -8,6 +8,7 @@ import {
   PlusCircleIcon,
   ClockCounterClockwiseIcon,
   PiggyBankIcon,
+  ListChecksIcon,
   UploadSimpleIcon,
   CaretLeftIcon,
   CaretRightIcon,
@@ -21,6 +22,7 @@ const LINKS = [
   { href: "/lancar", label: "Lançar", icon: PlusCircleIcon },
   { href: "/historico", label: "Histórico", icon: ClockCounterClockwiseIcon },
   { href: "/reserva", label: "Reserva", icon: PiggyBankIcon },
+  { href: "/checklist", label: "Checklist", icon: ListChecksIcon },
   { href: "/importar-extrato", label: "Importar", icon: UploadSimpleIcon },
 ];
 
