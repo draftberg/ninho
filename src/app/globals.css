@@ -12,6 +12,11 @@
   --color-card: #ffffff;
   --color-border: #e2ded0;
 
+  /* identidade de cada pessoa (avatares + visão "por pessoa") */
+  --color-pessoa-berg: #3e6b8a;
+  --color-pessoa-gabi: #b85c7a;
+  --color-pessoa-outro: #6e7a76;
+
   --font-title: var(--font-fraunces), serif;
   --font-body: var(--font-inter), sans-serif;
   --font-mono: var(--font-plex-mono), monospace;
@@ -316,6 +321,67 @@ a {
   border-bottom: none;
 }
 
+.person-card.pessoa-berg h3 {
+  color: var(--color-pessoa-berg);
+}
+
+.person-card.pessoa-gabi h3 {
+  color: var(--color-pessoa-gabi);
+}
+
+/* ---------- Identidade por pessoa (avatar + toggle de visão) ---------- */
+
+.person-avatar {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-size: 0.65rem;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.person-avatar.pessoa-berg {
+  background: var(--color-pessoa-berg);
+}
+
+.person-avatar.pessoa-gabi {
+  background: var(--color-pessoa-gabi);
+}
+
+.person-avatar.pessoa-outro {
+  background: var(--color-pessoa-outro);
+}
+
+.view-toggle {
+  display: inline-flex;
+  gap: 0.25rem;
+  background: var(--color-linen);
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  padding: 0.2rem;
+  margin-bottom: 1rem;
+}
+
+.view-toggle button {
+  border: none;
+  background: transparent;
+  border-radius: 999px;
+  padding: 0.35rem 0.85rem;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #6e7a76;
+  cursor: pointer;
+}
+
+.view-toggle button.active {
+  background: var(--color-primary-dark);
+  color: var(--color-linen);
+}
+
 /* ---------- Forms ---------- */
 
 .entry-form {
@@ -497,6 +563,24 @@ a {
   background: var(--color-purple);
 }
 
+.tag.pessoa-berg {
+  background: var(--color-pessoa-berg);
+}
+
+.tag.pessoa-gabi {
+  background: var(--color-pessoa-gabi);
+}
+
+.tag.pessoa-outro {
+  background: var(--color-pessoa-outro);
+}
+
+.entry-row {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
 .entry-main {
   display: flex;
   flex-direction: column;
@@ -528,6 +612,18 @@ a {
 
 .entry-valor.investimento {
   color: var(--color-purple);
+}
+
+.entry-valor.pessoa-berg {
+  color: var(--color-pessoa-berg);
+}
+
+.entry-valor.pessoa-gabi {
+  color: var(--color-pessoa-gabi);
+}
+
+.entry-valor.pessoa-outro {
+  color: var(--color-pessoa-outro);
 }
 
 .delete-button {

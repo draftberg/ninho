@@ -1,6 +1,6 @@
 "use client";
 
-import { useRouter, usePathname } from "next/navigation";
+import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import { TIPO_LABELS, type Tipo } from "@/lib/types";
 
 const TIPOS: Tipo[] = ["entrada", "saida", "investimento"];
@@ -16,9 +16,10 @@ export function FiltersBar({
 }) {
   const router = useRouter();
   const pathname = usePathname();
+  const searchParams = useSearchParams();
 
   function updateParam(key: string, value: string) {
-    const params = new URLSearchParams({ autor, tipo });
+    const params = new URLSearchParams(searchParams.toString());
     params.set(key, value);
     router.push(`${pathname}?${params.toString()}`);
   }

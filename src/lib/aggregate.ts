@@ -36,6 +36,21 @@ export function composicaoPorSubcategoria(
   };
 }
 
+export function composicaoPorPessoa(
+  entries: Entry[],
+  tipo: Tipo,
+): { labels: string[]; values: number[] } {
+  const totals = new Map<string, number>();
+  for (const entry of entries) {
+    if (entry.tipo !== tipo) continue;
+    totals.set(entry.autor, (totals.get(entry.autor) ?? 0) + Number(entry.valor));
+  }
+  return {
+    labels: Array.from(totals.keys()),
+    values: Array.from(totals.values()),
+  };
+}
+
 export function evolucaoUltimosMeses(
   entries: Entry[],
   quantidade = 6,

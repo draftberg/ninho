@@ -1,10 +1,19 @@
 import { createClient } from "@/lib/supabase/server";
 import { fetchAllEntries, fetchSettings } from "@/lib/data";
 import { formatBRL, formatDate } from "@/lib/format";
+import { personColorClass } from "@/lib/allowlist";
 import { NestIllustration } from "@/components/NestIllustration";
+import { PersonAvatar } from "@/components/PersonAvatar";
+import { ViewToggle, type Vista } from "@/components/ViewToggle";
 import { GoalForm } from "./GoalForm";
 
-export default async function ReservaBebePage() {
+export default async function ReservaBebePage({
+  searchParams,
+}: {
+  searchParams: Promise<{ vista?: string }>;
+}) {
+  const { vista: vistaParam } = await searchParams;
+  const vista: Vista = vistaParam === "pessoa" ? "pessoa" : "categoria";
   const supabase = await createClient();
   const [entries, settings] = await Promise.all([
     fetchAllEntries(supabase),
@@ -38,21 +47,28 @@ export default async function ReservaBebePage() {
       <div className="section-title" style={{ marginTop: "1.5rem" }}>
         Contribuições
       </div>
+      <ViewToggle vista={vista} />
       {contribuicoes.length === 0 && (
         <p className="empty-state">Nenhuma contribuição registrada ainda.</p>
       )}
       <div className="entry-list">
-        {contribuicoes.map((entry) => (
-          <div key={entry.id} className="entry-item">
-            <div className="entry-main">
-              <span className="entry-desc">{entry.descricao || "Contribuição"}</span>
-              <span className="entry-meta">
-                {formatDate(entry.date)} · {entry.autor}
-              </span>
+        {contribuicoes.map((entry) => {
+          const colorClass = vista === "pessoa" ? personColorClass(entry.autor) : "investimento";
+          return (
+            <div key={entry.id} className="entry-item">
+              <div className="entry-row">
+                <PersonAvatar autor={entry.autor} />
+                <div className="entry-main">
+                  <span className="entry-desc">{entry.descricao || "Contribuição"}</span>
+                  <span className="entry-meta">
+                    {formatDate(entry.date)} · {entry.autor}
+                  </span>
+                </div>
+              </div>
+              <span className={`entry-valor ${colorClass}`}>{formatBRL(entry.valor)}</span>
             </div>
-            <span className="entry-valor investimento">{formatBRL(entry.valor)}</span>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );

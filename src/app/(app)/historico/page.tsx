@@ -2,15 +2,19 @@ import { createClient } from "@/lib/supabase/server";
 import { fetchAllEntries } from "@/lib/data";
 import { formatBRL, formatDate } from "@/lib/format";
 import { TIPO_LABELS, SUBCATEGORIAS } from "@/lib/types";
+import { personColorClass } from "@/lib/allowlist";
 import { FiltersBar } from "./FiltersBar";
 import { DeleteButton } from "./DeleteButton";
+import { PersonAvatar } from "@/components/PersonAvatar";
+import { ViewToggle, type Vista } from "@/components/ViewToggle";
 
 export default async function HistoricoPage({
   searchParams,
 }: {
-  searchParams: Promise<{ autor?: string; tipo?: string }>;
+  searchParams: Promise<{ autor?: string; tipo?: string; vista?: string }>;
 }) {
-  const { autor = "todos", tipo = "todos" } = await searchParams;
+  const { autor = "todos", tipo = "todos", vista: vistaParam } = await searchParams;
+  const vista: Vista = vistaParam === "pessoa" ? "pessoa" : "categoria";
   const supabase = await createClient();
   const entries = await fetchAllEntries(supabase);
 
@@ -23,6 +27,7 @@ export default async function HistoricoPage({
   return (
     <div>
       <h2 className="section-title">Histórico</h2>
+      <ViewToggle vista={vista} />
       <FiltersBar autores={autores} autor={autor} tipo={tipo} />
 
       {filtered.length === 0 && <p className="empty-state">Nenhum lançamento encontrado.</p>}
@@ -33,19 +38,25 @@ export default async function HistoricoPage({
             SUBCATEGORIAS[entry.tipo].find((s) => s.value === entry.subcategoria)?.label ??
             entry.subcategoria;
           const sign = entry.tipo === "entrada" ? "+" : "-";
+          const colorClass = vista === "pessoa" ? personColorClass(entry.autor) : entry.tipo;
 
           return (
             <div key={entry.id} className="entry-item">
-              <div className="entry-main">
-                <div>
-                  <span className={`tag ${entry.tipo}`}>{TIPO_LABELS[entry.tipo]}</span>
-                  <span className="entry-desc">{entry.descricao || subcategoriaLabel}</span>
+              <div className="entry-row">
+                <PersonAvatar autor={entry.autor} />
+                <div className="entry-main">
+                  <div>
+                    <span className={`tag ${colorClass}`}>
+                      {vista === "pessoa" ? entry.autor : TIPO_LABELS[entry.tipo]}
+                    </span>
+                    <span className="entry-desc">{entry.descricao || subcategoriaLabel}</span>
+                  </div>
+                  <span className="entry-meta">
+                    {subcategoriaLabel} · {formatDate(entry.date)} · {entry.autor}
+                  </span>
                 </div>
-                <span className="entry-meta">
-                  {subcategoriaLabel} · {formatDate(entry.date)} · {entry.autor}
-                </span>
               </div>
-              <span className={`entry-valor ${entry.tipo}`}>
+              <span className={`entry-valor ${colorClass}`}>
                 {sign} {formatBRL(entry.valor)}
               </span>
               <DeleteButton id={entry.id} />

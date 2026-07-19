@@ -6,14 +6,17 @@ import {
   sumByTipo,
   reservaBebeTotal,
   composicaoPorSubcategoria,
+  composicaoPorPessoa,
   evolucaoUltimosMeses,
   porPessoa,
 } from "@/lib/aggregate";
 import { formatBRL } from "@/lib/format";
 import { SUBCATEGORIAS, type Tipo } from "@/lib/types";
+import { personColorClass, personColorHex } from "@/lib/allowlist";
 import { DonutChart } from "@/components/charts/DonutChart";
 import { EvolutionBarChart } from "@/components/charts/EvolutionBarChart";
 import { MonthFilter } from "./MonthFilter";
+import { ViewToggle, type Vista } from "@/components/ViewToggle";
 
 const DONUT_COLORS: Record<Tipo, string[]> = {
   entrada: ["#2B5049", "#4F7A70", "#89A89F"],
@@ -25,12 +28,35 @@ function subcategoriaLabel(tipo: Tipo, value: string) {
   return SUBCATEGORIAS[tipo].find((s) => s.value === value)?.label ?? value;
 }
 
+function donutFor(
+  filtered: ReturnType<typeof filterByMonth>,
+  tipo: Tipo,
+  vista: Vista,
+): { labels: string[]; values: number[]; colors: string[] } {
+  if (vista === "pessoa") {
+    const composicao = composicaoPorPessoa(filtered, tipo);
+    return {
+      labels: composicao.labels,
+      values: composicao.values,
+      colors: composicao.labels.map((autor) => personColorHex(autor)),
+    };
+  }
+
+  const composicao = composicaoPorSubcategoria(filtered, tipo);
+  return {
+    labels: composicao.labels.map((v) => subcategoriaLabel(tipo, v)),
+    values: composicao.values,
+    colors: DONUT_COLORS[tipo],
+  };
+}
+
 export default async function DashboardPage({
   searchParams,
 }: {
-  searchParams: Promise<{ mes?: string }>;
+  searchParams: Promise<{ mes?: string; vista?: string }>;
 }) {
-  const { mes } = await searchParams;
+  const { mes, vista: vistaParam } = await searchParams;
+  const vista: Vista = vistaParam === "pessoa" ? "pessoa" : "categoria";
   const supabase = await createClient();
   const allEntries = await fetchAllEntries(supabase);
 
@@ -44,9 +70,9 @@ export default async function DashboardPage({
   const saldo = totalEntrada - totalSaida - totalInvestimento;
   const reservaBebe = reservaBebeTotal(filtered);
 
-  const composicaoEntrada = composicaoPorSubcategoria(filtered, "entrada");
-  const composicaoSaida = composicaoPorSubcategoria(filtered, "saida");
-  const composicaoInvestimento = composicaoPorSubcategoria(filtered, "investimento");
+  const donutEntrada = donutFor(filtered, "entrada", vista);
+  const donutSaida = donutFor(filtered, "saida", vista);
+  const donutInvestimento = donutFor(filtered, "investimento", vista);
 
   const evolucao = evolucaoUltimosMeses(allEntries);
   const pessoas = porPessoa(filtered);
@@ -55,6 +81,7 @@ export default async function DashboardPage({
     <div>
       <h2 className="section-title">Painel</h2>
 
+      <ViewToggle vista={vista} />
       <MonthFilter months={months} selected={selectedMonth} />
 
       <div className="kpi-grid">
@@ -86,25 +113,25 @@ export default async function DashboardPage({
         <div className="chart-card">
           <div className="section-title">Entradas</div>
           <DonutChart
-            labels={composicaoEntrada.labels.map((v) => subcategoriaLabel("entrada", v))}
-            values={composicaoEntrada.values}
-            colors={DONUT_COLORS.entrada}
+            labels={donutEntrada.labels}
+            values={donutEntrada.values}
+            colors={donutEntrada.colors}
           />
         </div>
         <div className="chart-card">
           <div className="section-title">Saídas</div>
           <DonutChart
-            labels={composicaoSaida.labels.map((v) => subcategoriaLabel("saida", v))}
-            values={composicaoSaida.values}
-            colors={DONUT_COLORS.saida}
+            labels={donutSaida.labels}
+            values={donutSaida.values}
+            colors={donutSaida.colors}
           />
         </div>
         <div className="chart-card">
           <div className="section-title">Investimentos</div>
           <DonutChart
-            labels={composicaoInvestimento.labels.map((v) => subcategoriaLabel("investimento", v))}
-            values={composicaoInvestimento.values}
-            colors={DONUT_COLORS.investimento}
+            labels={donutInvestimento.labels}
+            values={donutInvestimento.values}
+            colors={donutInvestimento.colors}
           />
         </div>
         <div className="chart-card">
@@ -121,7 +148,7 @@ export default async function DashboardPage({
       <div className="person-breakdown">
         {pessoas.length === 0 && <p className="empty-state">Sem lançamentos neste período.</p>}
         {pessoas.map((p) => (
-          <div key={p.autor} className="card person-card">
+          <div key={p.autor} className={`card person-card ${personColorClass(p.autor)}`}>
             <h3>{p.autor}</h3>
             <div className="person-row">
               <span>Entrada</span>
