@@ -1,7 +1,7 @@
 // Ajuste os nomes de exibição de cada pessoa conforme preferir.
 export const PERSON_NAMES: Record<string, string> = {
   "bergg.pinheiro@gmail.com": "Berg",
-  "gnogueiradias@gmail.com": "G",
+  "gnogueiradias@gmail.com": "Gabi",
 };
 
 export const ALLOWED_EMAILS = Object.keys(PERSON_NAMES);
