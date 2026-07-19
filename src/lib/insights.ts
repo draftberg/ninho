@@ -112,7 +112,9 @@ Responda em português do Brasil, tom direto e acolhedor, sem jargão financeiro
     if (bullets.length === 0 && !analysis) throw new Error("resposta vazia");
 
     return { bullets, analysis };
-  } catch {
-    return { error: "Não foi possível gerar a análise agora. Tente novamente em instantes." };
+  } catch (err) {
+    console.error("[insights] falha ao gerar análise:", err);
+    const detail = err instanceof Error ? err.message : String(err);
+    return { error: `Não foi possível gerar a análise agora: ${detail}` };
   }
 }
