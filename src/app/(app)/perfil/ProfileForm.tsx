@@ -7,13 +7,19 @@ import type { Profile, TipoSalario } from "@/lib/types";
 export function ProfileForm({ email, profile }: { email: string; profile: Profile | null }) {
   const [isPending, startTransition] = useTransition();
   const [saved, setSaved] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [tipoSalario, setTipoSalario] = useState<TipoSalario>(profile?.tipo_salario ?? "mensal");
 
   function handleSubmit(formData: FormData) {
     setSaved(false);
+    setError(null);
     startTransition(async () => {
-      await upsertProfile(formData);
-      setSaved(true);
+      try {
+        await upsertProfile(formData);
+        setSaved(true);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Não foi possível salvar o perfil.");
+      }
     });
   }
 
@@ -135,6 +141,7 @@ export function ProfileForm({ email, profile }: { email: string; profile: Profil
         {isPending ? "Salvando..." : "Salvar"}
       </button>
       {saved && !isPending && <p className="form-message success">Perfil salvo!</p>}
+      {error && <p className="form-message error">{error}</p>}
     </form>
   );
 }
