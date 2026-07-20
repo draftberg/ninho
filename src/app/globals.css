@@ -947,6 +947,10 @@ a {
   color: var(--color-pastel-entrada-ink);
 }
 
+.checklist-item .mono.entrada {
+  color: var(--color-pastel-entrada-ink);
+}
+
 .checklist-section-title {
   font-size: 0.85rem;
   font-weight: 700;
@@ -968,10 +972,15 @@ a {
   border: 1px solid var(--color-pastel-entrada-ink);
 }
 
+.confirm-renda-header {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
 .confirm-renda-fields {
   display: flex;
   gap: 0.5rem;
-  margin-top: 0.4rem;
 }
 
 .confirm-renda-fields input {

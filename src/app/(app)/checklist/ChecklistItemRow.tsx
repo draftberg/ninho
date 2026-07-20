@@ -4,7 +4,7 @@ import { useState, useTransition } from "react";
 import { toggleChecklistItem, deleteChecklistItem, confirmarRenda, desconfirmarRenda } from "@/lib/actions";
 import { formatBRL } from "@/lib/format";
 import type { ChecklistItem } from "@/lib/types";
-import { CheckCircleIcon, CircleIcon, TrashIcon } from "@phosphor-icons/react";
+import { CheckCircleIcon, CircleIcon, TrashIcon, MoneyIcon } from "@phosphor-icons/react";
 
 function pad(n: number): string {
   return String(n).padStart(2, "0");
@@ -65,20 +65,23 @@ export function ChecklistItemRow({
           });
         }}
       >
-        <div className="checklist-item-main">
+        <div className="confirm-renda-header">
+          <span className="category-icon entrada">
+            <MoneyIcon size={14} weight="bold" />
+          </span>
           <span className="checklist-item-nome">{item.nome}</span>
-          <div className="confirm-renda-fields">
-            <input
-              type="number"
-              name="valor"
-              step="0.01"
-              min="0.01"
-              defaultValue={item.valor_esperado ?? ""}
-              required
-              className="valor-input"
-            />
-            <input type="date" name="date" defaultValue={defaultDate} required />
-          </div>
+        </div>
+        <div className="confirm-renda-fields">
+          <input
+            type="number"
+            name="valor"
+            step="0.01"
+            min="0.01"
+            defaultValue={item.valor_esperado ?? ""}
+            required
+            className="valor-input"
+          />
+          <input type="date" name="date" defaultValue={defaultDate} required />
         </div>
         <div className="confirm-renda-actions">
           <button type="button" className="secondary-button" onClick={() => setConfirming(false)}>
@@ -103,11 +106,22 @@ export function ChecklistItemRow({
       >
         {concluido ? <CheckCircleIcon size={22} weight="fill" /> : <CircleIcon size={22} />}
       </button>
+      {isReceber && (
+        <span className="category-icon entrada">
+          <MoneyIcon size={14} weight="bold" />
+        </span>
+      )}
       <div className="checklist-item-main">
         <span className="checklist-item-nome">{item.nome}</span>
-        {item.dia_vencimento && <span className="entry-meta">Vence dia {item.dia_vencimento}</span>}
+        {item.dia_vencimento && (
+          <span className="entry-meta">
+            {isReceber ? "Recebe" : "Vence"} dia {item.dia_vencimento}
+          </span>
+        )}
       </div>
-      {item.valor_esperado != null && <span className="mono">{formatBRL(item.valor_esperado)}</span>}
+      {item.valor_esperado != null && (
+        <span className={isReceber ? "mono entrada" : "mono"}>{formatBRL(item.valor_esperado)}</span>
+      )}
       {!item.origem_profile_id && (
         <button
           type="button"
