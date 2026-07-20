@@ -19,7 +19,7 @@ import {
   evolucaoAnoInteiro,
   porPessoa,
 } from "@/lib/aggregate";
-import { buildCashFlow } from "@/lib/cashflow";
+import { buildCashFlow, buildRollingCashFlow } from "@/lib/cashflow";
 import { goalProjections } from "@/lib/projections";
 import { formatBRL, monthLabel } from "@/lib/format";
 import { categoriaLabel, type Tipo } from "@/lib/types";
@@ -34,6 +34,7 @@ import {
 } from "@phosphor-icons/react/dist/ssr";
 import { DonutChart } from "@/components/charts/DonutChart";
 import { EvolutionBarChart } from "@/components/charts/EvolutionBarChart";
+import { CashFlowChart } from "@/components/charts/CashFlowChart";
 import { MonthFilter } from "./MonthFilter";
 import { YearFilter } from "./YearFilter";
 import { PeriodToggle, type Periodo } from "./PeriodToggle";
@@ -159,6 +160,8 @@ export default async function DashboardPage({
   const primeiroMesComprometido = mesesComprometidos[0] ?? null;
   const projecoesMetas = goalProjections(allEntries, goals).filter((p) => p.status !== "sem_prazo");
 
+  const cashFlowFuturo = buildRollingCashFlow(allEntries, checklistItems, profiles, 12);
+
   const calEntries = allEntries.filter((e) => e.date.startsWith(calMes));
   const calGoals = goals.filter((g) => g.data_alvo?.startsWith(calMes));
   const calDoneItemIds = new Set(calStatus.filter((s) => s.concluido).map((s) => s.item_id));
@@ -266,16 +269,20 @@ export default async function DashboardPage({
         ano={anoAtual}
       />
 
-      {periodo === "ano" && (
-        <>
-          <div className="section-title">Fluxo de caixa mensal — {selectedYear}</div>
-          <p className="entry-meta cashflow-hint">
-            Meses futuros sem lançamentos usam o salário base do perfil e os itens do checklist como
-            previsão.
-          </p>
-          <CashFlowTable columns={fluxoDeCaixa} />
-        </>
-      )}
+      <div className="section-title">Saldo futuro — mês atual + 12 meses</div>
+      <p className="entry-meta cashflow-hint">
+        Meses futuros sem lançamentos usam o salário base do perfil e os itens do checklist como previsão.
+      </p>
+      <div className="chart-card">
+        <CashFlowChart
+          labels={cashFlowFuturo.map((c) => c.label)}
+          entradas={cashFlowFuturo.map((c) => c.totalEntrada)}
+          saidas={cashFlowFuturo.map((c) => c.totalSaida)}
+          saldoMes={cashFlowFuturo.map((c) => c.saldoMes)}
+          saldoAcumulado={cashFlowFuturo.map((c) => c.saldoAcumulado)}
+        />
+      </div>
+      <CashFlowTable columns={cashFlowFuturo} />
 
       <div className="section-title">Por pessoa</div>
       <div className="person-breakdown">
