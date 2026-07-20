@@ -2,6 +2,8 @@
 
 import {
   Chart as ChartJS,
+  BarController,
+  LineController,
   BarElement,
   LineElement,
   PointElement,
@@ -13,7 +15,17 @@ import {
 import { Chart } from "react-chartjs-2";
 import { formatBRL } from "@/lib/format";
 
-ChartJS.register(BarElement, LineElement, PointElement, CategoryScale, LinearScale, Tooltip, Legend);
+ChartJS.register(
+  BarController,
+  LineController,
+  BarElement,
+  LineElement,
+  PointElement,
+  CategoryScale,
+  LinearScale,
+  Tooltip,
+  Legend,
+);
 
 export function CashFlowChart({
   labels,
