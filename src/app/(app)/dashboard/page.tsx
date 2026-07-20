@@ -20,6 +20,7 @@ import {
   porPessoa,
 } from "@/lib/aggregate";
 import { buildCashFlow } from "@/lib/cashflow";
+import { goalProjections } from "@/lib/projections";
 import { formatBRL, monthLabel } from "@/lib/format";
 import { categoriaLabel, type Tipo } from "@/lib/types";
 import { personColorClass, personColorHex } from "@/lib/allowlist";
@@ -37,6 +38,7 @@ import { MonthFilter } from "./MonthFilter";
 import { YearFilter } from "./YearFilter";
 import { PeriodToggle, type Periodo } from "./PeriodToggle";
 import { InsightsCard } from "./InsightsCard";
+import { PredictionsCard } from "./PredictionsCard";
 import { CashFlowTable } from "./CashFlowTable";
 import { MiniCalendarPanel } from "./MiniCalendarPanel";
 import { ChecklistItemRow } from "../checklist/ChecklistItemRow";
@@ -146,6 +148,15 @@ export default async function DashboardPage({
   const pessoas = porPessoa(filtered);
   const fluxoDeCaixa = periodo === "ano" ? buildCashFlow(allEntries, checklistItems, profiles, selectedYear) : [];
 
+  const anoAtual = String(new Date().getFullYear());
+  const cashFlowAnoAtual =
+    periodo === "ano" && selectedYear === anoAtual
+      ? fluxoDeCaixa
+      : buildCashFlow(allEntries, checklistItems, profiles, anoAtual);
+  const ultimaColunaAnoAtual = cashFlowAnoAtual[cashFlowAnoAtual.length - 1];
+  const mesesNegativos = cashFlowAnoAtual.filter((c) => c.saldoAcumulado < 0).length;
+  const projecoesMetas = goalProjections(allEntries, goals).filter((p) => p.status !== "sem_prazo");
+
   const calEntries = allEntries.filter((e) => e.date.startsWith(calMes));
   const calGoals = goals.filter((g) => g.data_alvo?.startsWith(calMes));
   const calDoneItemIds = new Set(calStatus.filter((s) => s.concluido).map((s) => s.item_id));
@@ -240,6 +251,13 @@ export default async function DashboardPage({
           />
         </div>
       </div>
+
+      <PredictionsCard
+        projections={projecoesMetas}
+        saldoProjetado={ultimaColunaAnoAtual?.saldoAcumulado ?? 0}
+        mesesNegativos={mesesNegativos}
+        ano={anoAtual}
+      />
 
       {periodo === "ano" && (
         <>

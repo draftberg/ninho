@@ -26,6 +26,8 @@ export function personColorHex(autor: string): string {
 
 export const ALLOWED_EMAILS = Object.keys(PERSON_NAMES);
 
+export const PERSON_DISPLAY_NAMES = Array.from(new Set(Object.values(PERSON_NAMES)));
+
 export function isAllowedEmail(email: string | null | undefined): boolean {
   if (!email) return false;
   return ALLOWED_EMAILS.includes(email.toLowerCase());

@@ -92,6 +92,22 @@ create table if not exists checklist_status (
   unique (item_id, mes)
 );
 
+-- ---------- orçamento (metas de gasto por pessoa/categoria) ----------
+-- cada pessoa do casal define um limite mensal por categoria de saída; a
+-- IA pode sugerir valores com base no salário e no histórico (ver
+-- src/lib/insights.ts: suggestBudgetLimits), mas quem confirma e salva é
+-- sempre a pessoa.
+
+create table if not exists budget_limits (
+  id uuid primary key default gen_random_uuid(),
+  autor text not null,
+  categoria text not null,
+  limite_mensal numeric(12, 2) not null check (limite_mensal >= 0),
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  unique (autor, categoria)
+);
+
 -- ---------- segurança: apenas as 2 contas do casal ----------
 -- Ajuste os e-mails abaixo para corresponder aos mesmos definidos em
 -- src/lib/allowlist.ts. A allowlist é checada em dois lugares por
@@ -110,6 +126,7 @@ alter table goals enable row level security;
 alter table checklist_items enable row level security;
 alter table checklist_status enable row level security;
 alter table profiles enable row level security;
+alter table budget_limits enable row level security;
 
 drop policy if exists "casal pode ver lancamentos" on entries;
 create policy "casal pode ver lancamentos" on entries
@@ -185,3 +202,19 @@ create policy "cada um edita o proprio perfil" on profiles
 drop policy if exists "cada um apaga o proprio perfil" on profiles;
 create policy "cada um apaga o proprio perfil" on profiles
   for delete using (is_allowed_email() and email = auth.email());
+
+drop policy if exists "casal pode ver metas de gasto" on budget_limits;
+create policy "casal pode ver metas de gasto" on budget_limits
+  for select using (is_allowed_email());
+
+drop policy if exists "casal pode criar metas de gasto" on budget_limits;
+create policy "casal pode criar metas de gasto" on budget_limits
+  for insert with check (is_allowed_email());
+
+drop policy if exists "casal pode atualizar metas de gasto" on budget_limits;
+create policy "casal pode atualizar metas de gasto" on budget_limits
+  for update using (is_allowed_email()) with check (is_allowed_email());
+
+drop policy if exists "casal pode apagar metas de gasto" on budget_limits;
+create policy "casal pode apagar metas de gasto" on budget_limits
+  for delete using (is_allowed_email());

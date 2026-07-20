@@ -5,7 +5,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { personNameFor } from "@/lib/allowlist";
 import { todayISO } from "@/lib/format";
-import type { NewEntry, Tipo } from "@/lib/types";
+import type { NewBudgetLimit, NewEntry, Tipo } from "@/lib/types";
 
 async function currentAuthor() {
   const supabase = await createClient();
@@ -213,6 +213,29 @@ export async function resetProfile() {
   revalidatePath("/perfil");
   revalidatePath("/checklist");
   revalidatePath("/calendario");
+  revalidatePath("/dashboard");
+}
+
+export async function upsertBudgetLimits(rows: NewBudgetLimit[]) {
+  if (rows.length === 0) return;
+  const { supabase } = await currentAuthor();
+
+  const { error } = await supabase.from("budget_limits").upsert(
+    rows.map((row) => ({ ...row, updated_at: new Date().toISOString() })),
+    { onConflict: "autor,categoria" },
+  );
+  if (error) throw new Error(error.message);
+
+  revalidatePath("/orcamento");
+  revalidatePath("/dashboard");
+}
+
+export async function deleteBudgetLimit(id: string) {
+  const { supabase } = await currentAuthor();
+  const { error } = await supabase.from("budget_limits").delete().eq("id", id);
+  if (error) throw new Error(error.message);
+
+  revalidatePath("/orcamento");
   revalidatePath("/dashboard");
 }
 

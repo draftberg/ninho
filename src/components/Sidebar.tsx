@@ -11,6 +11,7 @@ import {
   ListChecksIcon,
   CalendarBlankIcon,
   UploadSimpleIcon,
+  ChartPieSliceIcon,
   CaretLeftIcon,
   CaretRightIcon,
   SignOutIcon,
@@ -24,6 +25,7 @@ const LINKS = [
   { href: "/historico", label: "Histórico", icon: ClockCounterClockwiseIcon },
   { href: "/reserva", label: "Reserva", icon: PiggyBankIcon },
   { href: "/checklist", label: "Checklist", icon: ListChecksIcon },
+  { href: "/orcamento", label: "Orçamento", icon: ChartPieSliceIcon },
   { href: "/calendario", label: "Calendário", icon: CalendarBlankIcon },
   { href: "/importar-extrato", label: "Importar", icon: UploadSimpleIcon },
 ];

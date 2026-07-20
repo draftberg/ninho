@@ -1,5 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import type { ChecklistItem, ChecklistStatus, Entry, Goal, Profile } from "@/lib/types";
+import type { BudgetLimit, ChecklistItem, ChecklistStatus, Entry, Goal, Profile } from "@/lib/types";
 
 export async function fetchAllEntries(supabase: SupabaseClient): Promise<Entry[]> {
   const { data, error } = await supabase
@@ -47,4 +47,15 @@ export async function fetchProfiles(supabase: SupabaseClient): Promise<Profile[]
   const { data, error } = await supabase.from("profiles").select("*");
   if (error) throw error;
   return data as Profile[];
+}
+
+export async function fetchBudgetLimits(supabase: SupabaseClient): Promise<BudgetLimit[]> {
+  const { data, error } = await supabase
+    .from("budget_limits")
+    .select("*")
+    .order("autor", { ascending: true })
+    .order("categoria", { ascending: true });
+
+  if (error) throw error;
+  return data as BudgetLimit[];
 }

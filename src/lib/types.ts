@@ -336,3 +336,18 @@ export function salarioParcelas(p: Profile): SalarioParcela[] {
 export function salarioTotal(p: Profile): number {
   return salarioParcelas(p).reduce((sum, parcela) => sum + parcela.valor, 0);
 }
+
+// Limite mensal de gasto por pessoa/categoria (categoria sempre do tipo
+// "saida"). Pode ser criado manualmente ou aceito a partir de uma sugestão
+// da IA (ver src/lib/insights.ts: suggestBudgetLimits) — a IA nunca salva
+// direto, só devolve valores pra revisão.
+export interface BudgetLimit {
+  id: string;
+  autor: string;
+  categoria: string;
+  limite_mensal: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export type NewBudgetLimit = Pick<BudgetLimit, "autor" | "categoria" | "limite_mensal">;
