@@ -15,8 +15,6 @@ import {
   totalByGoal,
   composicaoPorCategoria,
   composicaoPorPessoa,
-  evolucaoUltimosMeses,
-  evolucaoAnoInteiro,
   porPessoa,
 } from "@/lib/aggregate";
 import { buildCashFlow, buildRollingCashFlow } from "@/lib/cashflow";
@@ -33,7 +31,6 @@ import {
   UserCircleIcon,
 } from "@phosphor-icons/react/dist/ssr";
 import { DonutChart } from "@/components/charts/DonutChart";
-import { EvolutionBarChart } from "@/components/charts/EvolutionBarChart";
 import { CashFlowChart } from "@/components/charts/CashFlowChart";
 import { MonthFilter } from "./MonthFilter";
 import { YearFilter } from "./YearFilter";
@@ -144,8 +141,6 @@ export default async function DashboardPage({
   const donutSaida = donutFor(filtered, "saida", vista);
   const donutInvestimento = donutFor(filtered, "investimento", vista);
 
-  const evolucao =
-    periodo === "ano" ? evolucaoAnoInteiro(allEntries, selectedYear) : evolucaoUltimosMeses(allEntries);
   const pessoas = porPessoa(filtered);
   const fluxoDeCaixa = periodo === "ano" ? buildCashFlow(allEntries, checklistItems, profiles, selectedYear) : [];
 
@@ -243,16 +238,6 @@ export default async function DashboardPage({
             labels={donutInvestimento.labels}
             values={donutInvestimento.values}
             colors={donutInvestimento.colors}
-          />
-        </div>
-        <div className="chart-card">
-          <div className="section-title">
-            {periodo === "ano" ? `Entradas x Saídas (${selectedYear})` : "Entradas x Saídas (últimos meses)"}
-          </div>
-          <EvolutionBarChart
-            labels={evolucao.labels}
-            entradas={evolucao.entradas}
-            saidas={evolucao.saidas}
           />
         </div>
       </div>
