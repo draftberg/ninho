@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { upsertProfile } from "@/lib/actions";
+import { upsertProfile, resetProfile } from "@/lib/actions";
+import { ConfirmDeleteButton } from "@/components/ConfirmDeleteButton";
 import type { Profile, TipoSalario } from "@/lib/types";
 
 export function ProfileForm({ email, profile }: { email: string; profile: Profile | null }) {
@@ -142,6 +143,16 @@ export function ProfileForm({ email, profile }: { email: string; profile: Profil
       </button>
       {saved && !isPending && <p className="form-message success">Perfil salvo!</p>}
       {error && <p className="form-message error">{error}</p>}
+
+      <div className="profile-danger-zone">
+        <ConfirmDeleteButton
+          label="Resetar informações do perfil"
+          title="Resetar perfil"
+          description="Isso apaga nome, sobrenome, telefone e o planejamento de salário deste perfil, incluindo as entradas futuras ainda não confirmadas no checklist. Salários já confirmados continuam no Histórico normalmente."
+          onConfirm={resetProfile}
+          className="danger-outline-button"
+        />
+      </div>
     </form>
   );
 }

@@ -1357,6 +1357,65 @@ a {
   margin-bottom: 0;
 }
 
+.confirm-delete-input {
+  width: 100%;
+  border: 1px solid var(--color-border);
+  border-radius: 0.7rem;
+  padding: 0.7rem 0.9rem;
+  font-family: var(--font-body);
+  font-size: 1rem;
+  margin-bottom: 1rem;
+}
+
+.confirm-delete-actions {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: flex-end;
+}
+
+.danger-button {
+  background: #9a3c2b;
+  color: #fff;
+  border: none;
+  border-radius: 0.9rem;
+  padding: 0.8rem 1rem;
+  font-weight: 700;
+  font-size: 1rem;
+  cursor: pointer;
+  font-family: var(--font-body);
+}
+
+.danger-button:hover {
+  background: #7d2f21;
+}
+
+.danger-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.danger-outline-button {
+  background: transparent;
+  color: #9a3c2b;
+  border: 1px solid var(--color-pastel-saida-ink, #9a3c2b);
+  border-radius: 0.9rem;
+  padding: 0.7rem 1rem;
+  font-weight: 700;
+  font-size: 0.9rem;
+  cursor: pointer;
+  font-family: var(--font-body);
+}
+
+.danger-outline-button:hover {
+  background: var(--color-pastel-saida);
+}
+
+.profile-danger-zone {
+  margin-top: 1.5rem;
+  padding-top: 1.25rem;
+  border-top: 1px dashed var(--color-border);
+}
+
 /* ---------- Calendário ---------- */
 
 .calendar-weekdays {

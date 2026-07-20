@@ -181,3 +181,7 @@ drop policy if exists "cada um edita o proprio perfil" on profiles;
 create policy "cada um edita o proprio perfil" on profiles
   for update using (is_allowed_email() and email = auth.email())
   with check (is_allowed_email() and email = auth.email());
+
+drop policy if exists "cada um apaga o proprio perfil" on profiles;
+create policy "cada um apaga o proprio perfil" on profiles
+  for delete using (is_allowed_email() and email = auth.email());

@@ -100,6 +100,16 @@ export async function updateGoalTarget(formData: FormData) {
   revalidatePath("/dashboard");
 }
 
+export async function deleteGoal(id: string) {
+  const { supabase } = await currentAuthor();
+  const { error } = await supabase.from("goals").delete().eq("id", id);
+  if (error) throw new Error(error.message);
+
+  revalidatePath("/reserva");
+  revalidatePath("/dashboard");
+  revalidatePath("/lancar");
+}
+
 export async function createChecklistItem(formData: FormData) {
   const { supabase } = await currentAuthor();
   const nome = formData.get("nome") as string;
@@ -183,6 +193,22 @@ export async function upsertProfile(formData: FormData) {
     { parcela: 1, valor: valor1, dia: dia1 },
     { parcela: 2, valor: valor2, dia: dia2 },
   ]);
+
+  revalidatePath("/perfil");
+  revalidatePath("/checklist");
+  revalidatePath("/calendario");
+  revalidatePath("/dashboard");
+}
+
+export async function resetProfile() {
+  const { supabase, email } = await currentAuthor();
+  if (!email) throw new Error("Usuário não autenticado.");
+
+  // apaga o perfil inteiro — os itens de checklist "a_receber" ligados a ele
+  // somem junto (cascata), mas os lançamentos de salário já confirmados
+  // continuam no Histórico normalmente.
+  const { error } = await supabase.from("profiles").delete().eq("email", email);
+  if (error) throw new Error(error.message);
 
   revalidatePath("/perfil");
   revalidatePath("/checklist");

@@ -10,6 +10,8 @@ import { ViewToggle, type Vista } from "@/components/ViewToggle";
 import { PiggyBankIcon, CalendarCheckIcon } from "@phosphor-icons/react/dist/ssr";
 import { EditGoalForm } from "./EditGoalForm";
 import { CreateGoalForm } from "./CreateGoalForm";
+import { ConfirmDeleteButton } from "@/components/ConfirmDeleteButton";
+import { deleteGoal } from "@/lib/actions";
 import Link from "next/link";
 
 export default async function ReservaPage({
@@ -115,6 +117,13 @@ function GoalDetail({ goal, entries, vista }: { goal: Goal; entries: Entry[]; vi
           <p className="entry-meta">Conclusão prevista: {formatDate(goal.data_alvo)}</p>
         )}
         <EditGoalForm goal={goal} />
+        <ConfirmDeleteButton
+          label="Excluir meta"
+          title="Excluir meta"
+          description={`Isso apaga a meta "${goal.nome}". As contribuições já registradas continuam no Histórico, mas deixam de contar para esta meta.`}
+          onConfirm={deleteGoal.bind(null, goal.id)}
+          className="danger-outline-button"
+        />
       </div>
 
       {pessoas.length > 0 && (
