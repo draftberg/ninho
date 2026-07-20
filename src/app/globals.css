@@ -743,6 +743,22 @@ a {
   color: var(--color-pastel-saida-ink);
 }
 
+.form-message.warn {
+  background: var(--color-pastel-reserva);
+  color: var(--color-pastel-reserva-ink);
+}
+
+.form-message a {
+  color: inherit;
+  font-weight: 700;
+  text-decoration: underline;
+}
+
+.insights-card .form-message.warn {
+  background: rgba(255, 255, 255, 0.14);
+  color: var(--color-gold-light);
+}
+
 /* ---------- Histórico ---------- */
 
 .filters-bar {

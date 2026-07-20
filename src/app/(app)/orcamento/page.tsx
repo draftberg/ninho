@@ -1,7 +1,8 @@
 import { createClient } from "@/lib/supabase/server";
-import { fetchAllEntries, fetchBudgetLimits } from "@/lib/data";
+import { fetchAllEntries, fetchBudgetLimits, fetchProfiles, fetchChecklistItems } from "@/lib/data";
 import { filterByMonth } from "@/lib/aggregate";
-import type { BudgetLimit } from "@/lib/types";
+import { buildCashFlow } from "@/lib/cashflow";
+import { salarioTotal, type BudgetLimit } from "@/lib/types";
 import { PERSON_DISPLAY_NAMES, personColorClass } from "@/lib/allowlist";
 import { MonthNav } from "@/components/MonthNav";
 import { BudgetLimitCard } from "./BudgetLimitCard";
@@ -22,7 +23,12 @@ export default async function OrcamentoPage({
   const mes = mesParam && /^\d{4}-\d{2}$/.test(mesParam) ? mesParam : currentMonthKey();
 
   const supabase = await createClient();
-  const [allEntries, limits] = await Promise.all([fetchAllEntries(supabase), fetchBudgetLimits(supabase)]);
+  const [allEntries, limits, profiles, checklistItems] = await Promise.all([
+    fetchAllEntries(supabase),
+    fetchBudgetLimits(supabase),
+    fetchProfiles(supabase),
+    fetchChecklistItems(supabase),
+  ]);
 
   const gastosDoMes = filterByMonth(allEntries, mes).filter((e) => e.tipo === "saida");
   const gastoPorChave = new Map<string, number>();
@@ -38,6 +44,18 @@ export default async function OrcamentoPage({
     limitsByPerson.set(limit.autor, arr);
   }
 
+  const salarioAtualizadoEm = profiles.reduce(
+    (max, p) => (salarioTotal(p) > 0 && p.updated_at > max ? p.updated_at : max),
+    "",
+  );
+  const limitesAtualizadosEm = limits.reduce((max, l) => (l.updated_at > max ? l.updated_at : max), "");
+  const salarioDesatualizado = salarioAtualizadoEm !== "" && salarioAtualizadoEm > limitesAtualizadosEm;
+
+  const anoAtual = String(new Date().getFullYear());
+  const cashFlowAnoAtual = buildCashFlow(allEntries, checklistItems, profiles, anoAtual);
+  const mesesComprometidos = cashFlowAnoAtual.filter((c) => c.saldoAcumulado < 0);
+  const primeiroMesComprometido = mesesComprometidos[0] ?? null;
+
   return (
     <div>
       <h2 className="section-title">Orçamento</h2>
@@ -45,6 +63,20 @@ export default async function OrcamentoPage({
         Metas de gasto mensal por categoria e por pessoa — ajuda a não estourar o salário.
       </p>
       <MonthNav mes={mes} />
+
+      {salarioDesatualizado && (
+        <p className="form-message warn">
+          O salário no Perfil foi atualizado depois da última vez que as metas de gasto foram salvas — gere
+          uma sugestão nova pra manter tudo alinhado.
+        </p>
+      )}
+      {mesesComprometidos.length > 0 && (
+        <p className="form-message error">
+          {mesesComprometidos.length} {mesesComprometidos.length === 1 ? "mês projetado" : "meses projetados"}{" "}
+          com saldo negativo este ano{primeiroMesComprometido && `, o mais próximo é ${primeiroMesComprometido.label}`}
+          . Vale reavaliar as metas abaixo.
+        </p>
+      )}
 
       <BudgetSuggestionsPanel />
 

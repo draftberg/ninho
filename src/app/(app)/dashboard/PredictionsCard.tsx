@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import Link from "next/link";
 import { generatePredictiveActions, type InsightsResult } from "@/lib/insights";
 import { Modal } from "@/components/Modal";
 import { formatBRL } from "@/lib/format";
@@ -18,11 +19,13 @@ export function PredictionsCard({
   projections,
   saldoProjetado,
   mesesNegativos,
+  primeiroMesComprometido,
   ano,
 }: {
   projections: GoalProjection[];
   saldoProjetado: number;
   mesesNegativos: number;
+  primeiroMesComprometido: { key: string; label: string } | null;
   ano: string;
 }) {
   const [isPending, startTransition] = useTransition();
@@ -62,7 +65,8 @@ export function PredictionsCard({
         {mesesNegativos > 0 && (
           <p className="form-message error">
             {mesesNegativos} {mesesNegativos === 1 ? "mês projetado" : "meses projetados"} com saldo negativo
-            este ano.
+            este ano{primeiroMesComprometido && `, o mais próximo é ${primeiroMesComprometido.label}`}. Vale
+            revisar as <Link href="/orcamento">metas de gasto</Link>.
           </p>
         )}
       </div>

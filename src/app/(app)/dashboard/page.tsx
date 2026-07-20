@@ -154,7 +154,9 @@ export default async function DashboardPage({
       ? fluxoDeCaixa
       : buildCashFlow(allEntries, checklistItems, profiles, anoAtual);
   const ultimaColunaAnoAtual = cashFlowAnoAtual[cashFlowAnoAtual.length - 1];
-  const mesesNegativos = cashFlowAnoAtual.filter((c) => c.saldoAcumulado < 0).length;
+  const mesesComprometidos = cashFlowAnoAtual.filter((c) => c.saldoAcumulado < 0);
+  const mesesNegativos = mesesComprometidos.length;
+  const primeiroMesComprometido = mesesComprometidos[0] ?? null;
   const projecoesMetas = goalProjections(allEntries, goals).filter((p) => p.status !== "sem_prazo");
 
   const calEntries = allEntries.filter((e) => e.date.startsWith(calMes));
@@ -256,6 +258,11 @@ export default async function DashboardPage({
         projections={projecoesMetas}
         saldoProjetado={ultimaColunaAnoAtual?.saldoAcumulado ?? 0}
         mesesNegativos={mesesNegativos}
+        primeiroMesComprometido={
+          primeiroMesComprometido
+            ? { key: primeiroMesComprometido.key, label: primeiroMesComprometido.label }
+            : null
+        }
         ano={anoAtual}
       />
 

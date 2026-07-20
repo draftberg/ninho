@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import Link from "next/link";
 import { upsertProfile, resetProfile } from "@/lib/actions";
 import { ConfirmDeleteButton } from "@/components/ConfirmDeleteButton";
 import type { Profile, TipoSalario } from "@/lib/types";
@@ -8,6 +9,7 @@ import type { Profile, TipoSalario } from "@/lib/types";
 export function ProfileForm({ email, profile }: { email: string; profile: Profile | null }) {
   const [isPending, startTransition] = useTransition();
   const [saved, setSaved] = useState(false);
+  const [savedComSalario, setSavedComSalario] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [tipoSalario, setTipoSalario] = useState<TipoSalario>(profile?.tipo_salario ?? "mensal");
 
@@ -18,6 +20,7 @@ export function ProfileForm({ email, profile }: { email: string; profile: Profil
       try {
         await upsertProfile(formData);
         setSaved(true);
+        setSavedComSalario(Number(formData.get("salario_valor_1")) > 0);
       } catch (err) {
         setError(err instanceof Error ? err.message : "Não foi possível salvar o perfil.");
       }
@@ -142,6 +145,12 @@ export function ProfileForm({ email, profile }: { email: string; profile: Profil
         {isPending ? "Salvando..." : "Salvar"}
       </button>
       {saved && !isPending && <p className="form-message success">Perfil salvo!</p>}
+      {saved && !isPending && savedComSalario && (
+        <p className="form-message warn">
+          Salário atualizado — não esqueça de reavaliar suas{" "}
+          <Link href="/orcamento">metas de gasto</Link>.
+        </p>
+      )}
       {error && <p className="form-message error">{error}</p>}
 
       <div className="profile-danger-zone">
