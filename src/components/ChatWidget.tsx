@@ -249,7 +249,15 @@ export function ChatWidget({ alerts }: { alerts: string[] }) {
                       key={i}
                       className={`chat-bubble ${m.role}${isPlaceholderVazio ? " chat-typing" : ""}`}
                     >
-                      {isPlaceholderVazio ? "Digitando..." : m.content}
+                      {isPlaceholderVazio ? (
+                        <span className="chat-typing-dots">
+                          <span />
+                          <span />
+                          <span />
+                        </span>
+                      ) : (
+                        m.content
+                      )}
                     </div>
                   );
                 })}

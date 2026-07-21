@@ -4,6 +4,12 @@ import { personNameFor } from "@/lib/allowlist";
 import { buildFinanceContext } from "@/lib/chat-context";
 import { fetchChatMensagens } from "@/lib/data";
 
+// Runtime Edge: nas Vercel Functions em Node.js o corpo da resposta pode
+// ficar retido em buffer e chegar ao cliente em poucos blocos grandes em vez
+// de ir fluindo aos poucos — no Edge Runtime o streaming chega de fato
+// incremental, que é o objetivo aqui.
+export const runtime = "edge";
+
 const FALLBACK = "Não foi possível responder agora. Tente novamente em instantes.";
 
 function temaHeuristico(texto: string): string {
@@ -67,10 +73,12 @@ export async function POST(request: Request) {
       contextoPromise,
     ]);
 
-    const { error: userMsgError } = await supabase
+    // não bloqueia o início do streaming — a mensagem já está em `mensagem`
+    // pra montar o prompt; a gravação em si só precisa terminar antes da
+    // resposta do assistente ser salva, lá no final
+    const userMsgPromise = supabase
       .from("chat_mensagens")
       .insert({ conversa_id: conversaId, role: "user", content: mensagem });
-    if (userMsgError) throw new Error(userMsgError.message);
 
     const systemInstruction = `Você é o assistente financeiro pessoal do app "Ninho", usado por um casal (Berg e Gabi) que espera um bebê e controla as finanças em conjunto. Você está conversando com ${autor}.
 
@@ -117,6 +125,9 @@ ${contexto}`;
           if (!fullText) controller.enqueue(encoder.encode(FALLBACK));
         } finally {
           controller.close();
+
+          const { error: userMsgError } = await userMsgPromise;
+          if (userMsgError) console.error("[chat] falha ao salvar mensagem do usuário:", userMsgError);
 
           const respostaFinal = fullText || FALLBACK;
           const { error: assistantMsgError } = await supabase
