@@ -74,25 +74,25 @@ export async function enviarMensagemChat(
   if (!mensagem) return { error: "Escreva uma mensagem antes de enviar." };
 
   const { supabase, autor } = await currentAuthor();
-
   const novaConversa = !conversaIdInicial;
   let conversaId = conversaIdInicial;
 
-  if (!conversaId) {
-    const { data, error } = await supabase.from("chat_conversas").insert({ autor }).select().single();
-    if (error) throw new Error(error.message);
-    conversaId = data.id as string;
-  }
+  try {
+    if (!conversaId) {
+      const { data, error } = await supabase.from("chat_conversas").insert({ autor }).select().single();
+      if (error) throw new Error(error.message);
+      conversaId = data.id as string;
+    }
 
-  const { error: userMsgError } = await supabase
-    .from("chat_mensagens")
-    .insert({ conversa_id: conversaId, role: "user", content: mensagem });
-  if (userMsgError) throw new Error(userMsgError.message);
+    const { error: userMsgError } = await supabase
+      .from("chat_mensagens")
+      .insert({ conversa_id: conversaId, role: "user", content: mensagem });
+    if (userMsgError) throw new Error(userMsgError.message);
 
-  const historico = await fetchChatMensagens(supabase, conversaId);
-  const contexto = await buildFinanceContext(supabase);
+    const historico = await fetchChatMensagens(supabase, conversaId);
+    const contexto = await buildFinanceContext(supabase);
 
-  const systemInstruction = `Você é o assistente financeiro pessoal do app "Ninho", usado por um casal (Berg e Gabi) que espera um bebê e controla as finanças em conjunto. Você está conversando com ${autor}.
+    const systemInstruction = `Você é o assistente financeiro pessoal do app "Ninho", usado por um casal (Berg e Gabi) que espera um bebê e controla as finanças em conjunto. Você está conversando com ${autor}.
 
 Seu papel:
 1. Explicar como qualquer parte do app funciona quando perguntarem — o app tem: Painel (visão geral, gráficos, saldo futuro projetado), Lançar (registrar entradas/saídas/investimentos, com opção de marcar como recorrente e vincular a um cartão), Histórico (lista de lançamentos), Reserva (metas de investimento tipo reserva do bebê), Cartões (fatura por fechamento/vencimento), Checklist (contas fixas e entradas recorrentes a confirmar mês a mês), Orçamento (metas de gasto por categoria e pessoa, com sugestão de IA), Calendário (visão mensal de vencimentos) e Importar extrato (lê um PDF/CSV e categoriza automaticamente).
@@ -102,15 +102,14 @@ ${novaConversa ? "4. Essa é a primeira mensagem desta conversa — gere também
 
 ${contexto}`;
 
-  const contents = historico.map((m) => ({
-    role: m.role === "assistant" ? "model" : "user",
-    parts: [{ text: m.content }],
-  }));
+    const contents = historico.map((m) => ({
+      role: m.role === "assistant" ? "model" : "user",
+      parts: [{ text: m.content }],
+    }));
 
-  const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
-  const model = process.env.GEMINI_MODEL || "gemini-flash-latest";
+    const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+    const model = process.env.GEMINI_MODEL || "gemini-flash-latest";
 
-  try {
     const response = await ai.models.generateContent({
       model,
       contents,
@@ -147,6 +146,9 @@ ${contexto}`;
     return { conversaId, resposta };
   } catch (err) {
     console.error("[chat] falha ao gerar resposta:", err);
-    return { conversaId, error: "Não foi possível responder agora. Tente novamente em instantes." };
+    return {
+      conversaId: conversaId ?? undefined,
+      error: "Não foi possível responder agora. Tente novamente em instantes.",
+    };
   }
 }

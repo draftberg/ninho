@@ -114,20 +114,25 @@ export function ChatWidget({ alerts }: { alerts: string[] }) {
     setMensagens((prev) => [...prev, { role: "user", content: texto }]);
 
     startTransition(async () => {
-      const result = await enviarMensagemChat(conversaId, texto);
-      if (result.error) {
-        setError(result.error);
-        return;
-      }
-      if (result.conversaId) {
-        const isNova = !conversaId;
-        setConversaId(result.conversaId);
-        if (isNova) {
-          setConversas(null); // força recarregar a lista com a conversa nova na próxima abertura
+      try {
+        const result = await enviarMensagemChat(conversaId, texto);
+        if (result.error) {
+          setError(result.error);
+          return;
         }
-      }
-      if (result.resposta) {
-        setMensagens((prev) => [...prev, { role: "assistant", content: result.resposta! }]);
+        if (result.conversaId) {
+          const isNova = !conversaId;
+          setConversaId(result.conversaId);
+          if (isNova) {
+            setConversas(null); // força recarregar a lista com a conversa nova na próxima abertura
+          }
+        }
+        if (result.resposta) {
+          setMensagens((prev) => [...prev, { role: "assistant", content: result.resposta! }]);
+        }
+      } catch (err) {
+        console.error("[chat] falha ao enviar mensagem:", err);
+        setError("Não foi possível enviar a mensagem agora. Tente novamente em instantes.");
       }
     });
   }
