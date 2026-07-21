@@ -5,7 +5,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { personNameFor } from "@/lib/allowlist";
 import { todayISO } from "@/lib/format";
-import type { NewBudgetLimit, NewCartao, NewEntry, Tipo } from "@/lib/types";
+import { subcategoriaLabel, type NewBudgetLimit, type NewCartao, type NewEntry, type Tipo, type TipoChecklistItem } from "@/lib/types";
 
 async function currentAuthor() {
   const supabase = await createClient();
@@ -20,6 +20,7 @@ export async function addEntry(formData: FormData) {
 
   const goalIdRaw = formData.get("goal_id") as string;
   const cartaoIdRaw = formData.get("cartao_id") as string;
+  const recorrente = formData.get("recorrente") === "1";
 
   const entry: NewEntry = {
     tipo: formData.get("tipo") as Tipo,
@@ -33,13 +34,62 @@ export async function addEntry(formData: FormData) {
     cartao_id: cartaoIdRaw || null,
   };
 
-  const { error } = await supabase.from("entries").insert(entry);
+  const { data: inserted, error } = await supabase.from("entries").insert(entry).select().single();
   if (error) throw new Error(error.message);
+
+  if (recorrente && (entry.tipo === "entrada" || entry.tipo === "saida")) {
+    await criarItemRecorrente(supabase, entry, inserted.id);
+  }
 
   revalidatePath("/dashboard");
   revalidatePath("/historico");
   revalidatePath("/reserva");
   redirect("/historico");
+}
+
+// Cria o item de checklist correspondente a uma saída/entrada marcada como
+// "recorrente" no Lançar, e já confirma o mês do próprio lançamento (ele
+// mesmo é a primeira ocorrência — nos meses seguintes, confirma-se via
+// Checklist). Sempre cria um item novo: o toggle é pra configurar a
+// recorrência uma vez, não pra repetir o lançamento de um mês existente.
+async function criarItemRecorrente(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  entry: NewEntry,
+  entryId: string,
+) {
+  const tipoChecklist: TipoChecklistItem = entry.tipo === "entrada" ? "a_receber" : "a_pagar";
+  const dia = Number(entry.date.slice(8, 10));
+  const nome = entry.descricao || subcategoriaLabel(entry.tipo, entry.categoria, entry.subcategoria);
+
+  const { data: item, error: itemError } = await supabase
+    .from("checklist_items")
+    .insert({
+      nome,
+      valor_esperado: entry.valor,
+      dia_vencimento: dia,
+      tipo: tipoChecklist,
+      categoria: entry.categoria,
+      subcategoria: entry.subcategoria,
+    })
+    .select()
+    .single();
+  if (itemError) throw new Error(itemError.message);
+
+  const mes = entry.date.slice(0, 7);
+  const { error: statusError } = await supabase.from("checklist_status").upsert(
+    {
+      item_id: item.id,
+      mes,
+      concluido: true,
+      concluido_em: new Date().toISOString(),
+      entry_id: entryId,
+    },
+    { onConflict: "item_id,mes" },
+  );
+  if (statusError) throw new Error(statusError.message);
+
+  revalidatePath("/checklist");
+  revalidatePath("/calendario");
 }
 
 export async function saveImportedEntries(entries: NewEntry[]) {
@@ -213,11 +263,15 @@ export async function createChecklistItem(formData: FormData) {
   const nome = formData.get("nome") as string;
   const valorEsperadoRaw = formData.get("valor_esperado") as string;
   const diaVencimentoRaw = formData.get("dia_vencimento") as string;
+  const categoria = (formData.get("categoria") as string) || null;
+  const subcategoria = (formData.get("subcategoria") as string) || null;
 
   const { error } = await supabase.from("checklist_items").insert({
     nome,
     valor_esperado: valorEsperadoRaw ? Number(valorEsperadoRaw) : null,
     dia_vencimento: diaVencimentoRaw ? Number(diaVencimentoRaw) : null,
+    categoria,
+    subcategoria,
   });
   if (error) throw new Error(error.message);
 
@@ -351,6 +405,8 @@ async function syncSalarioChecklistItems(
           valor_esperado: valor,
           dia_vencimento: dia,
           tipo: "a_receber",
+          categoria: "salario",
+          subcategoria: "salario",
           origem_profile_id: profileId,
           origem_parcela: parcela,
         },
@@ -368,35 +424,48 @@ async function syncSalarioChecklistItems(
   }
 }
 
-export async function confirmarRenda(itemId: string, mes: string, valor: number, date: string) {
-  const { supabase } = await currentAuthor();
+// Confirma um item do checklist (a_pagar ou a_receber) criando o lançamento
+// real correspondente. Exige categoria/subcategoria definidas no item — sem
+// elas não dá pra saber que tipo de lançamento gerar (ver
+// createChecklistItem/syncSalarioChecklistItems/EntryForm: todo item passa
+// a nascer com categoria, exceto os de cartão, que nunca confirmam
+// lançamento porque as compras já existem como entries próprias).
+export async function confirmarChecklistItem(itemId: string, mes: string, valor: number, date: string) {
+  const { supabase, autor } = await currentAuthor();
 
   const { data: item, error: itemError } = await supabase
     .from("checklist_items")
-    .select("origem_profile_id")
+    .select("tipo, categoria, subcategoria, origem_profile_id")
     .eq("id", itemId)
     .single();
   if (itemError) throw new Error(itemError.message);
-  if (!item.origem_profile_id) throw new Error("Item não é uma entrada de salário.");
+  if (!item.categoria || !item.subcategoria) {
+    throw new Error("Este item não tem categoria definida — edite o cadastro antes de confirmar.");
+  }
 
-  const { data: profile, error: profileError } = await supabase
-    .from("profiles")
-    .select("email")
-    .eq("id", item.origem_profile_id)
-    .single();
-  if (profileError) throw new Error(profileError.message);
+  let entryAutor = autor;
+  if (item.origem_profile_id) {
+    const { data: profile, error: profileError } = await supabase
+      .from("profiles")
+      .select("email")
+      .eq("id", item.origem_profile_id)
+      .single();
+    if (profileError) throw new Error(profileError.message);
+    entryAutor = personNameFor(profile.email);
+  }
 
   const { data: entry, error: entryError } = await supabase
     .from("entries")
     .insert({
-      tipo: "entrada",
-      categoria: "salario",
-      subcategoria: "salario",
+      tipo: item.tipo === "a_receber" ? "entrada" : "saida",
+      categoria: item.categoria,
+      subcategoria: item.subcategoria,
       valor,
-      descricao: "Salário confirmado",
+      descricao: null,
       date,
-      autor: personNameFor(profile.email),
+      autor: entryAutor,
       goal_id: null,
+      cartao_id: null,
     })
     .select()
     .single();
@@ -420,7 +489,7 @@ export async function confirmarRenda(itemId: string, mes: string, valor: number,
   revalidatePath("/calendario");
 }
 
-export async function desconfirmarRenda(itemId: string, mes: string) {
+export async function desconfirmarChecklistItem(itemId: string, mes: string) {
   const { supabase } = await currentAuthor();
 
   const { data: status, error: statusError } = await supabase

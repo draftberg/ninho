@@ -1,13 +1,28 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { toggleChecklistItem, deleteChecklistItem, confirmarRenda, desconfirmarRenda } from "@/lib/actions";
+import {
+  toggleChecklistItem,
+  deleteChecklistItem,
+  confirmarChecklistItem,
+  desconfirmarChecklistItem,
+} from "@/lib/actions";
 import { formatBRL } from "@/lib/format";
+import { categoriaIcon } from "@/lib/category-icons";
 import type { ChecklistItem } from "@/lib/types";
-import { CheckCircleIcon, CircleIcon, TrashIcon, MoneyIcon, CreditCardIcon } from "@phosphor-icons/react";
+import { CheckCircleIcon, CircleIcon, TrashIcon, CreditCardIcon } from "@phosphor-icons/react";
 
 function pad(n: number): string {
   return String(n).padStart(2, "0");
+}
+
+function categoryIconBadge(categoria: string, tone: "entrada" | "saida") {
+  const Icon = categoriaIcon(categoria);
+  return (
+    <span className={`category-icon ${tone}`}>
+      <Icon size={14} weight="bold" />
+    </span>
+  );
 }
 
 export function ChecklistItemRow({
@@ -25,6 +40,7 @@ export function ChecklistItemRow({
   const [confirming, setConfirming] = useState(false);
   const isReceber = item.tipo === "a_receber";
   const isCartao = Boolean(item.origem_cartao_id);
+  const podeConfirmar = Boolean(item.categoria && item.subcategoria) && !isCartao;
   const valorExibido = valorCalculado ?? item.valor_esperado;
 
   function handleToggle() {
@@ -41,11 +57,11 @@ export function ChecklistItemRow({
   }
 
   function handleCheckClick() {
-    if (isReceber) {
+    if (podeConfirmar) {
       if (concluido) {
         if (!confirm("Desfazer a confirmação? O lançamento criado será excluído.")) return;
         startTransition(() => {
-          desconfirmarRenda(item.id, mes);
+          desconfirmarChecklistItem(item.id, mes);
         });
       } else {
         setConfirming(true);
@@ -65,14 +81,12 @@ export function ChecklistItemRow({
           const date = formData.get("date") as string;
           setConfirming(false);
           startTransition(() => {
-            confirmarRenda(item.id, mes, valor, date);
+            confirmarChecklistItem(item.id, mes, valor, date);
           });
         }}
       >
         <div className="confirm-renda-header">
-          <span className="category-icon entrada">
-            <MoneyIcon size={14} weight="bold" />
-          </span>
+          {item.categoria && categoryIconBadge(item.categoria, isReceber ? "entrada" : "saida")}
           <span className="checklist-item-nome">{item.nome}</span>
         </div>
         <div className="confirm-renda-fields">
@@ -110,15 +124,12 @@ export function ChecklistItemRow({
       >
         {concluido ? <CheckCircleIcon size={22} weight="fill" /> : <CircleIcon size={22} />}
       </button>
-      {isReceber && (
-        <span className="category-icon entrada">
-          <MoneyIcon size={14} weight="bold" />
-        </span>
-      )}
-      {isCartao && (
+      {isCartao ? (
         <span className="category-icon saida">
           <CreditCardIcon size={14} weight="bold" />
         </span>
+      ) : (
+        item.categoria && categoryIconBadge(item.categoria, isReceber ? "entrada" : "saida")
       )}
       <div className="checklist-item-main">
         <span className="checklist-item-nome">{item.nome}</span>

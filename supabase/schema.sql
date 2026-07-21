@@ -96,6 +96,8 @@ create table if not exists checklist_items (
   origem_profile_id uuid references profiles(id) on delete cascade,
   origem_parcela smallint check (origem_parcela in (1, 2)),
   origem_cartao_id uuid references cartoes(id) on delete cascade,
+  categoria text,
+  subcategoria text,
   created_at timestamptz not null default now(),
   unique (origem_profile_id, origem_parcela),
   unique (origem_cartao_id)

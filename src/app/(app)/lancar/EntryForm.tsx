@@ -151,6 +151,15 @@ export function EntryForm({ goals, cartoes }: { goals: Goal[]; cartoes: Cartao[]
         </div>
       )}
 
+      {tipo !== "investimento" && (
+        <div className="field">
+          <label className="checkbox-field">
+            <input type="checkbox" name="recorrente" value="1" />
+            Repetir todo mês (cria um item no Checklist pra confirmar os próximos meses)
+          </label>
+        </div>
+      )}
+
       <div className="field">
         <label htmlFor="valor">Valor (R$)</label>
         <input
