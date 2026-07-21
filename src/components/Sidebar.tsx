@@ -6,7 +6,6 @@ import { usePathname, useRouter } from "next/navigation";
 import {
   SquaresFourIcon,
   PlusCircleIcon,
-  ClockCounterClockwiseIcon,
   PiggyBankIcon,
   CreditCardIcon,
   ListChecksIcon,
@@ -23,8 +22,7 @@ import { createClient } from "@/lib/supabase/client";
 
 const LINKS = [
   { href: "/dashboard", label: "Painel", icon: SquaresFourIcon },
-  { href: "/lancar", label: "Lançar", icon: PlusCircleIcon },
-  { href: "/historico", label: "Histórico", icon: ClockCounterClockwiseIcon },
+  { href: "/lancar", label: "Lançamentos", icon: PlusCircleIcon },
   { href: "/reserva", label: "Reserva", icon: PiggyBankIcon },
   { href: "/cartoes", label: "Cartões", icon: CreditCardIcon },
   { href: "/financiamentos", label: "Financiamentos", icon: HandCoinsIcon },
@@ -85,7 +83,10 @@ export function Sidebar({ userName }: { userName: string }) {
       <nav className="sidebar-nav">
         {LINKS.map((link) => {
           const Icon = link.icon;
-          const active = pathname.startsWith(link.href);
+          const active =
+            link.href === "/lancar"
+              ? pathname.startsWith("/lancar") || pathname.startsWith("/historico")
+              : pathname.startsWith(link.href);
           return (
             <Link
               key={link.href}

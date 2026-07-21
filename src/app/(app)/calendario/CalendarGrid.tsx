@@ -1,5 +1,6 @@
 import type { ChecklistItem, Entry, Goal } from "@/lib/types";
 import { FlagIcon, MoneyIcon } from "@phosphor-icons/react/dist/ssr";
+import Link from "next/link";
 
 const WEEKDAYS = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
 
@@ -62,7 +63,11 @@ export function CalendarGrid({
           const isToday = new Date().toISOString().slice(0, 10) === dateStr;
 
           return (
-            <div key={dateStr} className={`calendar-cell${isToday ? " today" : ""}`}>
+            <Link
+              key={dateStr}
+              href={`/historico?date=${dateStr}`}
+              className={`calendar-cell${isToday ? " today" : ""}`}
+            >
               <span className="calendar-daynum">{day}</span>
               {(entradaSum > 0 || saidaSum > 0) && (
                 <div className="calendar-totals">
@@ -108,7 +113,7 @@ export function CalendarGrid({
                   ))}
                 </div>
               )}
-            </div>
+            </Link>
           );
         })}
       </div>

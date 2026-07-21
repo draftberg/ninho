@@ -1,72 +1,55 @@
 import { createClient } from "@/lib/supabase/server";
-import { fetchAllEntries } from "@/lib/data";
-import { formatBRL, formatDate } from "@/lib/format";
-import { TIPO_LABELS, categoriaLabel, subcategoriaLabel } from "@/lib/types";
-import { categoriaIcon } from "@/lib/category-icons";
-import { personColorClass } from "@/lib/allowlist";
+import { fetchAllEntries, fetchGoals, fetchCartoes } from "@/lib/data";
+import { formatDate } from "@/lib/format";
 import { FiltersBar } from "./FiltersBar";
-import { DeleteButton } from "./DeleteButton";
-import { PersonAvatar } from "@/components/PersonAvatar";
+import { EntryRow } from "./EntryRow";
 import { ViewToggle, type Vista } from "@/components/ViewToggle";
+import { LancamentosTabs } from "@/components/LancamentosTabs";
+import Link from "next/link";
 
 export default async function HistoricoPage({
   searchParams,
 }: {
-  searchParams: Promise<{ autor?: string; tipo?: string; vista?: string }>;
+  searchParams: Promise<{ autor?: string; tipo?: string; vista?: string; date?: string }>;
 }) {
-  const { autor = "todos", tipo = "todos", vista: vistaParam } = await searchParams;
+  const { autor = "todos", tipo = "todos", vista: vistaParam, date } = await searchParams;
   const vista: Vista = vistaParam === "pessoa" ? "pessoa" : "categoria";
   const supabase = await createClient();
-  const entries = await fetchAllEntries(supabase);
+  const [entries, goals, cartoes] = await Promise.all([
+    fetchAllEntries(supabase),
+    fetchGoals(supabase),
+    fetchCartoes(supabase),
+  ]);
 
   const autores = Array.from(new Set(entries.map((e) => e.autor))).sort();
 
   const filtered = entries.filter(
-    (e) => (autor === "todos" || e.autor === autor) && (tipo === "todos" || e.tipo === tipo),
+    (e) =>
+      (autor === "todos" || e.autor === autor) &&
+      (tipo === "todos" || e.tipo === tipo) &&
+      (!date || e.date === date),
   );
 
   return (
     <div>
-      <h2 className="section-title">Histórico</h2>
+      <h2 className="section-title">Lançamentos</h2>
+      <LancamentosTabs ativa="historico" />
       <ViewToggle vista={vista} />
       <FiltersBar autores={autores} autor={autor} tipo={tipo} />
+
+      {date && (
+        <p className="filtro-data-ativo">
+          Filtrando por {formatDate(date)} ·{" "}
+          <Link href={`/historico?autor=${autor}&tipo=${tipo}&vista=${vista}`}>Limpar filtro</Link>
+        </p>
+      )}
 
       {filtered.length === 0 && <p className="empty-state">Nenhum lançamento encontrado.</p>}
 
       <div className="entry-list">
-        {filtered.map((entry) => {
-          const catLabel = categoriaLabel(entry.tipo, entry.categoria);
-          const subLabel = subcategoriaLabel(entry.tipo, entry.categoria, entry.subcategoria);
-          const sign = entry.tipo === "entrada" ? "+" : "-";
-          const colorClass = vista === "pessoa" ? personColorClass(entry.autor) : entry.tipo;
-          const CategoriaIcon = categoriaIcon(entry.categoria);
-
-          return (
-            <div key={entry.id} className="entry-item">
-              <div className="entry-row">
-                <PersonAvatar autor={entry.autor} />
-                <span className={`category-icon ${entry.tipo}`}>
-                  <CategoriaIcon size={14} weight="bold" />
-                </span>
-                <div className="entry-main">
-                  <div>
-                    <span className={`tag ${colorClass}`}>
-                      {vista === "pessoa" ? entry.autor : TIPO_LABELS[entry.tipo]}
-                    </span>
-                    <span className="entry-desc">{entry.descricao || subLabel}</span>
-                  </div>
-                  <span className="entry-meta">
-                    {catLabel} · {subLabel} · {formatDate(entry.date)} · {entry.autor}
-                  </span>
-                </div>
-              </div>
-              <span className={`entry-valor ${colorClass}`}>
-                {sign} {formatBRL(entry.valor)}
-              </span>
-              <DeleteButton id={entry.id} />
-            </div>
-          );
-        })}
+        {filtered.map((entry) => (
+          <EntryRow key={entry.id} entry={entry} vista={vista} goals={goals} cartoes={cartoes} />
+        ))}
       </div>
     </div>
   );

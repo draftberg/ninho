@@ -626,6 +626,28 @@ a {
   gap: 0.5rem;
 }
 
+.section-tabs {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1.25rem;
+}
+
+.section-tabs a {
+  padding: 0.55rem 1rem;
+  border-radius: 0.8rem;
+  border: 1px solid var(--color-border);
+  background: var(--color-card);
+  font-weight: 700;
+  color: var(--color-ink-muted);
+  text-decoration: none;
+}
+
+.section-tabs a.active {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+  color: #fff;
+}
+
 .tipo-toggle button {
   display: inline-flex;
   align-items: center;
@@ -819,6 +841,21 @@ a {
   border-radius: 1.1rem;
   padding: 0.8rem 1rem;
   box-shadow: var(--shadow-card);
+}
+
+.entry-item-editing {
+  display: block;
+  padding: 1rem;
+}
+
+.entry-edit-form {
+  max-width: 480px;
+}
+
+.filtro-data-ativo {
+  font-size: 0.85rem;
+  color: var(--color-ink-muted);
+  margin-bottom: 0.75rem;
 }
 
 .entry-item .tag {
@@ -1679,6 +1716,14 @@ a {
   display: flex;
   flex-direction: column;
   gap: 0.3rem;
+  text-decoration: none;
+  color: var(--color-ink);
+  cursor: pointer;
+  transition: border-color 0.15s ease;
+}
+
+.calendar-cell:not(.empty):hover {
+  border-color: var(--color-primary);
 }
 
 .calendar-cell.empty {

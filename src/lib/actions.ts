@@ -125,6 +125,38 @@ export async function deleteEntry(id: string) {
   revalidatePath("/reserva");
 }
 
+// Edita um lançamento já existente — não mexe em autor (quem lançou
+// continua o mesmo) nem em recorrente/checklist (isso só se configura na
+// criação, pra não duplicar itens do checklist a cada edição).
+export async function updateEntry(formData: FormData) {
+  const { supabase } = await currentAuthor();
+  const id = formData.get("id") as string;
+  const goalIdRaw = formData.get("goal_id") as string;
+  const cartaoIdRaw = formData.get("cartao_id") as string;
+  const tipo = formData.get("tipo") as Tipo;
+
+  const { error } = await supabase
+    .from("entries")
+    .update({
+      tipo,
+      categoria: formData.get("categoria") as string,
+      subcategoria: formData.get("subcategoria") as string,
+      valor: Number(formData.get("valor")),
+      descricao: (formData.get("descricao") as string) || null,
+      date: formData.get("date") as string,
+      goal_id: goalIdRaw || null,
+      cartao_id: cartaoIdRaw || null,
+      dividido: tipo === "saida" && formData.get("dividido") === "1",
+    })
+    .eq("id", id);
+  if (error) throw new Error(error.message);
+
+  revalidatePath("/dashboard");
+  revalidatePath("/historico");
+  revalidatePath("/reserva");
+  revalidatePath("/cartoes");
+}
+
 export async function createGoal(formData: FormData) {
   const { supabase } = await currentAuthor();
   const nome = formData.get("nome") as string;

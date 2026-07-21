@@ -3,6 +3,7 @@ import { fetchGoals, fetchCartoes } from "@/lib/data";
 import { personNameFor } from "@/lib/allowlist";
 import { outroAutor } from "@/lib/divisao";
 import { EntryForm } from "./EntryForm";
+import { LancamentosTabs } from "@/components/LancamentosTabs";
 
 export default async function LancarPage() {
   const supabase = await createClient();
@@ -14,7 +15,8 @@ export default async function LancarPage() {
 
   return (
     <div>
-      <h2 className="section-title">Novo lançamento</h2>
+      <h2 className="section-title">Lançamentos</h2>
+      <LancamentosTabs ativa="novo" />
       <EntryForm goals={goals} cartoes={cartoes} outroNome={outroNome} />
     </div>
   );
