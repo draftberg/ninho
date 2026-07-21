@@ -1,5 +1,15 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import type { BudgetLimit, Cartao, ChecklistItem, ChecklistStatus, Entry, Goal, Profile } from "@/lib/types";
+import type {
+  BudgetLimit,
+  Cartao,
+  ChatConversa,
+  ChatMensagem,
+  ChecklistItem,
+  ChecklistStatus,
+  Entry,
+  Goal,
+  Profile,
+} from "@/lib/types";
 
 export async function fetchAllEntries(supabase: SupabaseClient): Promise<Entry[]> {
   const { data, error } = await supabase
@@ -68,4 +78,29 @@ export async function fetchCartoes(supabase: SupabaseClient): Promise<Cartao[]> 
 
   if (error) throw error;
   return data as Cartao[];
+}
+
+export async function fetchChatConversas(supabase: SupabaseClient): Promise<ChatConversa[]> {
+  const { data, error } = await supabase
+    .from("chat_conversas")
+    .select("*")
+    .order("dia", { ascending: false })
+    .order("updated_at", { ascending: false });
+
+  if (error) throw error;
+  return data as ChatConversa[];
+}
+
+export async function fetchChatMensagens(
+  supabase: SupabaseClient,
+  conversaId: string,
+): Promise<ChatMensagem[]> {
+  const { data, error } = await supabase
+    .from("chat_mensagens")
+    .select("*")
+    .eq("conversa_id", conversaId)
+    .order("created_at", { ascending: true });
+
+  if (error) throw error;
+  return data as ChatMensagem[];
 }

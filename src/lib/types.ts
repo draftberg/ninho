@@ -376,3 +376,25 @@ export interface BudgetLimit {
 }
 
 export type NewBudgetLimit = Pick<BudgetLimit, "autor" | "categoria" | "limite_mensal">;
+
+// Conversa com o assistente financeiro (bolhão flutuante). Agrupada por dia
+// (`dia`), com um `tema` curto gerado pela IA na primeira troca de
+// mensagens (ver src/lib/chat.ts: enviarMensagemChat).
+export interface ChatConversa {
+  id: string;
+  autor: string;
+  tema: string;
+  dia: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export type ChatRole = "user" | "assistant";
+
+export interface ChatMensagem {
+  id: string;
+  conversa_id: string;
+  role: ChatRole;
+  content: string;
+  created_at: string;
+}

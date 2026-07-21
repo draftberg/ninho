@@ -129,6 +129,30 @@ create table if not exists budget_limits (
   unique (autor, categoria)
 );
 
+-- ---------- assistente financeiro em chat (bolhão flutuante) ----------
+-- conversas são agrupadas por dia e têm um tema (título curto gerado pela
+-- IA na primeira troca de mensagens).
+
+create table if not exists chat_conversas (
+  id uuid primary key default gen_random_uuid(),
+  autor text not null,
+  tema text not null default 'Nova conversa',
+  dia date not null default current_date,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create table if not exists chat_mensagens (
+  id uuid primary key default gen_random_uuid(),
+  conversa_id uuid not null references chat_conversas(id) on delete cascade,
+  role text not null check (role in ('user', 'assistant')),
+  content text not null,
+  created_at timestamptz not null default now()
+);
+
+create index if not exists chat_conversas_dia_idx on chat_conversas (dia desc);
+create index if not exists chat_mensagens_conversa_id_idx on chat_mensagens (conversa_id);
+
 -- ---------- segurança: apenas as 2 contas do casal ----------
 -- Ajuste os e-mails abaixo para corresponder aos mesmos definidos em
 -- src/lib/allowlist.ts. A allowlist é checada em dois lugares por
@@ -149,6 +173,8 @@ alter table checklist_status enable row level security;
 alter table profiles enable row level security;
 alter table budget_limits enable row level security;
 alter table cartoes enable row level security;
+alter table chat_conversas enable row level security;
+alter table chat_mensagens enable row level security;
 
 drop policy if exists "casal pode ver lancamentos" on entries;
 create policy "casal pode ver lancamentos" on entries
@@ -255,4 +281,32 @@ create policy "casal pode atualizar cartoes" on cartoes
 
 drop policy if exists "casal pode apagar cartoes" on cartoes;
 create policy "casal pode apagar cartoes" on cartoes
+  for delete using (is_allowed_email());
+
+drop policy if exists "casal pode ver conversas" on chat_conversas;
+create policy "casal pode ver conversas" on chat_conversas
+  for select using (is_allowed_email());
+
+drop policy if exists "casal pode criar conversas" on chat_conversas;
+create policy "casal pode criar conversas" on chat_conversas
+  for insert with check (is_allowed_email());
+
+drop policy if exists "casal pode atualizar conversas" on chat_conversas;
+create policy "casal pode atualizar conversas" on chat_conversas
+  for update using (is_allowed_email()) with check (is_allowed_email());
+
+drop policy if exists "casal pode apagar conversas" on chat_conversas;
+create policy "casal pode apagar conversas" on chat_conversas
+  for delete using (is_allowed_email());
+
+drop policy if exists "casal pode ver mensagens" on chat_mensagens;
+create policy "casal pode ver mensagens" on chat_mensagens
+  for select using (is_allowed_email());
+
+drop policy if exists "casal pode criar mensagens" on chat_mensagens;
+create policy "casal pode criar mensagens" on chat_mensagens
+  for insert with check (is_allowed_email());
+
+drop policy if exists "casal pode apagar mensagens" on chat_mensagens;
+create policy "casal pode apagar mensagens" on chat_mensagens
   for delete using (is_allowed_email());
