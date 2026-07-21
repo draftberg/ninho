@@ -366,30 +366,15 @@ a {
   min-width: 0;
   padding: 1.5rem;
   padding-bottom: 2.5rem;
-  max-width: 1180px;
+  /* cresce com a tela em vez de travar num valor fixo — antes ficava uma
+     franja vazia em monitores largos; o teto de 1900px evita linhas de
+     texto/gráficos esticados demais em telas ultra-wide */
+  max-width: clamp(1180px, 92vw, 1900px);
 }
 
 @media (max-width: 640px) {
   .app-main {
     padding: 1rem;
-  }
-}
-
-/* telas largas: o conteúdo travava em 1180px mesmo sobrando espaço —
-   aproveita melhor monitores grandes em vez de deixar franja vazia */
-@media (min-width: 1440px) {
-  .app-main {
-    max-width: 1440px;
-  }
-
-  .dashboard-layout {
-    grid-template-columns: minmax(0, 1fr) 340px;
-  }
-}
-
-@media (min-width: 1800px) {
-  .app-main {
-    max-width: 1680px;
   }
 }
 
@@ -2005,7 +1990,7 @@ a {
 
 .dashboard-layout {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 300px;
+  grid-template-columns: minmax(0, 1fr) clamp(300px, 20vw, 380px);
   gap: 1.5rem;
   align-items: start;
 }
