@@ -4,6 +4,7 @@ import { formatBRL } from "@/lib/format";
 import { salarioParcelas } from "@/lib/types";
 import { personColorClass, personNameFor } from "@/lib/allowlist";
 import { ProfileForm } from "./ProfileForm";
+import { NotificationOptIn } from "@/components/NotificationOptIn";
 
 export default async function PerfilPage() {
   const supabase = await createClient();
@@ -21,6 +22,7 @@ export default async function PerfilPage() {
     <div>
       <h2 className="section-title">Perfil</h2>
       <ProfileForm email={email} profile={own} />
+      <NotificationOptIn />
 
       {partner && (
         <div className="card partner-card">

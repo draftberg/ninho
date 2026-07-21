@@ -173,6 +173,20 @@ create table if not exists chat_mensagens (
 create index if not exists chat_conversas_dia_idx on chat_conversas (dia desc);
 create index if not exists chat_mensagens_conversa_id_idx on chat_mensagens (conversa_id);
 
+-- ---------- lembretes ativos (push notifications) ----------
+-- uma subscription por navegador/dispositivo em que alguém ativou os
+-- lembretes; o resumo diário (ver src/app/api/cron/lembretes) envia pra
+-- todas as linhas dessa tabela.
+
+create table if not exists push_subscriptions (
+  id uuid primary key default gen_random_uuid(),
+  autor text not null,
+  endpoint text not null unique,
+  p256dh text not null,
+  auth text not null,
+  created_at timestamptz not null default now()
+);
+
 -- ---------- segurança: apenas as 2 contas do casal ----------
 -- Ajuste os e-mails abaixo para corresponder aos mesmos definidos em
 -- src/lib/allowlist.ts. A allowlist é checada em dois lugares por
@@ -196,6 +210,7 @@ alter table cartoes enable row level security;
 alter table financiamentos enable row level security;
 alter table chat_conversas enable row level security;
 alter table chat_mensagens enable row level security;
+alter table push_subscriptions enable row level security;
 
 drop policy if exists "casal pode ver lancamentos" on entries;
 create policy "casal pode ver lancamentos" on entries
@@ -346,4 +361,20 @@ create policy "casal pode criar mensagens" on chat_mensagens
 
 drop policy if exists "casal pode apagar mensagens" on chat_mensagens;
 create policy "casal pode apagar mensagens" on chat_mensagens
+  for delete using (is_allowed_email());
+
+drop policy if exists "casal pode ver push subscriptions" on push_subscriptions;
+create policy "casal pode ver push subscriptions" on push_subscriptions
+  for select using (is_allowed_email());
+
+drop policy if exists "casal pode criar push subscriptions" on push_subscriptions;
+create policy "casal pode criar push subscriptions" on push_subscriptions
+  for insert with check (is_allowed_email());
+
+drop policy if exists "casal pode atualizar push subscriptions" on push_subscriptions;
+create policy "casal pode atualizar push subscriptions" on push_subscriptions
+  for update using (is_allowed_email()) with check (is_allowed_email());
+
+drop policy if exists "casal pode apagar push subscriptions" on push_subscriptions;
+create policy "casal pode apagar push subscriptions" on push_subscriptions
   for delete using (is_allowed_email());

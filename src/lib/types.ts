@@ -426,3 +426,14 @@ export interface ChatMensagem {
   content: string;
   created_at: string;
 }
+
+// Assinatura de push de um navegador/dispositivo em que alguém ativou os
+// lembretes (ver src/lib/push.ts e src/app/api/cron/lembretes).
+export interface PushSubscriptionRecord {
+  id: string;
+  autor: string;
+  endpoint: string;
+  p256dh: string;
+  auth: string;
+  created_at: string;
+}

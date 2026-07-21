@@ -2,7 +2,15 @@ import { filterByMonth } from "@/lib/aggregate";
 import { buildRollingCashFlow } from "@/lib/cashflow";
 import { goalProjections } from "@/lib/projections";
 import { formatBRL, todayISO } from "@/lib/format";
-import { categoriaLabel, type BudgetLimit, type ChecklistItem, type Entry, type Goal, type Profile } from "@/lib/types";
+import {
+  categoriaLabel,
+  type BudgetLimit,
+  type ChecklistItem,
+  type ChecklistStatus,
+  type Entry,
+  type Goal,
+  type Profile,
+} from "@/lib/types";
 
 // Alertas calculados sem IA — reaproveita goalProjections, buildRollingCashFlow
 // e a comparação orçamento x gasto já usadas em outras telas. Serve tanto
@@ -49,4 +57,31 @@ export function computeAlertas(
   }
 
   return alertas;
+}
+
+// Contas/entradas do checklist que vencem amanhã e ainda não foram
+// confirmadas neste mês — usado só pelo resumo diário de push (ver
+// src/app/api/cron/lembretes), não pelo chat. `statusDoMesDeAmanha` deve
+// vir de fetchChecklistStatus pro mês de vencimento de amanhã (que pode ser
+// o mês seguinte, se hoje for o último dia do mês).
+export function computeLembretesDoDia(
+  checklistItems: ChecklistItem[],
+  statusDoMesDeAmanha: ChecklistStatus[],
+): string[] {
+  const amanha = new Date();
+  amanha.setDate(amanha.getDate() + 1);
+  const diaAmanha = amanha.getDate();
+
+  const concluidos = new Set(
+    statusDoMesDeAmanha.filter((s) => s.concluido).map((s) => s.item_id),
+  );
+
+  const lembretes: string[] = [];
+  for (const item of checklistItems) {
+    if (item.dia_vencimento !== diaAmanha || concluidos.has(item.id)) continue;
+    const acao = item.tipo === "a_receber" ? "a receber" : "a pagar";
+    const valor = item.valor_esperado != null ? ` — ${formatBRL(item.valor_esperado)}` : "";
+    lembretes.push(`"${item.nome}" (${acao}) vence amanhã${valor}.`);
+  }
+  return lembretes;
 }
