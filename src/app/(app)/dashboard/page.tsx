@@ -34,9 +34,9 @@ import {
 } from "@phosphor-icons/react/dist/ssr";
 import { DonutChart } from "@/components/charts/DonutChart";
 import { CashFlowChart } from "@/components/charts/CashFlowChart";
-import { MonthFilter } from "./MonthFilter";
-import { YearFilter } from "./YearFilter";
-import { PeriodToggle, type Periodo } from "./PeriodToggle";
+import { MonthFilter } from "@/components/MonthFilter";
+import { YearFilter } from "@/components/YearFilter";
+import { PeriodToggle, type Periodo } from "@/components/PeriodToggle";
 import { InsightsCard } from "./InsightsCard";
 import { PredictionsCard } from "./PredictionsCard";
 import { CashFlowTable } from "./CashFlowTable";
