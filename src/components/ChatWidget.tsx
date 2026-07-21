@@ -1,12 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, useTransition } from "react";
-import {
-  listarConversas,
-  carregarMensagens,
-  enviarMensagemChat,
-  deletarConversa,
-} from "@/lib/chat";
+import { listarConversas, carregarMensagens, deletarConversa } from "@/lib/chat";
 import { formatDate } from "@/lib/format";
 import type { ChatConversa } from "@/lib/types";
 import {
@@ -111,27 +106,49 @@ export function ChatWidget({ alerts }: { alerts: string[] }) {
     if (!texto || isPending) return;
     setInput("");
     setError(null);
-    setMensagens((prev) => [...prev, { role: "user", content: texto }]);
+    const isNova = !conversaId;
+    setMensagens((prev) => [...prev, { role: "user", content: texto }, { role: "assistant", content: "" }]);
 
     startTransition(async () => {
       try {
-        const result = await enviarMensagemChat(conversaId, texto);
-        if (result.error) {
-          setError(result.error);
+        const response = await fetch("/api/chat", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ conversaId, texto }),
+        });
+
+        if (!response.ok || !response.body) {
+          const mensagemErro = (await response.text()) || "Não foi possível responder agora.";
+          setMensagens((prev) => prev.slice(0, -1));
+          setError(mensagemErro);
           return;
         }
-        if (result.conversaId) {
-          const isNova = !conversaId;
-          setConversaId(result.conversaId);
+
+        const novaConversaId = response.headers.get("X-Conversa-Id");
+        if (novaConversaId) {
+          setConversaId(novaConversaId);
           if (isNova) {
             setConversas(null); // força recarregar a lista com a conversa nova na próxima abertura
           }
         }
-        if (result.resposta) {
-          setMensagens((prev) => [...prev, { role: "assistant", content: result.resposta! }]);
+
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+        for (;;) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          const chunk = decoder.decode(value, { stream: true });
+          if (!chunk) continue;
+          setMensagens((prev) => {
+            const proximo = [...prev];
+            const ultimo = proximo[proximo.length - 1];
+            proximo[proximo.length - 1] = { ...ultimo, content: ultimo.content + chunk };
+            return proximo;
+          });
         }
       } catch (err) {
         console.error("[chat] falha ao enviar mensagem:", err);
+        setMensagens((prev) => prev.slice(0, -1));
         setError("Não foi possível enviar a mensagem agora. Tente novamente em instantes.");
       }
     });
@@ -224,12 +241,18 @@ export function ChatWidget({ alerts }: { alerts: string[] }) {
           ) : (
             <>
               <div className="chat-messages" ref={scrollRef}>
-                {mensagens.map((m, i) => (
-                  <div key={i} className={`chat-bubble ${m.role}`}>
-                    {m.content}
-                  </div>
-                ))}
-                {isPending && <div className="chat-bubble assistant chat-typing">Digitando...</div>}
+                {mensagens.map((m, i) => {
+                  const isPlaceholderVazio =
+                    isPending && i === mensagens.length - 1 && m.role === "assistant" && !m.content;
+                  return (
+                    <div
+                      key={i}
+                      className={`chat-bubble ${m.role}${isPlaceholderVazio ? " chat-typing" : ""}`}
+                    >
+                      {isPlaceholderVazio ? "Digitando..." : m.content}
+                    </div>
+                  );
+                })}
                 {error && <p className="form-message error">{error}</p>}
               </div>
               <form
