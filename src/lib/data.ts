@@ -1,5 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import type { BudgetLimit, ChecklistItem, ChecklistStatus, Entry, Goal, Profile } from "@/lib/types";
+import type { BudgetLimit, Cartao, ChecklistItem, ChecklistStatus, Entry, Goal, Profile } from "@/lib/types";
 
 export async function fetchAllEntries(supabase: SupabaseClient): Promise<Entry[]> {
   const { data, error } = await supabase
@@ -58,4 +58,14 @@ export async function fetchBudgetLimits(supabase: SupabaseClient): Promise<Budge
 
   if (error) throw error;
   return data as BudgetLimit[];
+}
+
+export async function fetchCartoes(supabase: SupabaseClient): Promise<Cartao[]> {
+  const { data, error } = await supabase
+    .from("cartoes")
+    .select("*")
+    .order("created_at", { ascending: true });
+
+  if (error) throw error;
+  return data as Cartao[];
 }

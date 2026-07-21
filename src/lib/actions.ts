@@ -5,7 +5,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { personNameFor } from "@/lib/allowlist";
 import { todayISO } from "@/lib/format";
-import type { NewBudgetLimit, NewEntry, Tipo } from "@/lib/types";
+import type { NewBudgetLimit, NewCartao, NewEntry, Tipo } from "@/lib/types";
 
 async function currentAuthor() {
   const supabase = await createClient();
@@ -19,6 +19,7 @@ export async function addEntry(formData: FormData) {
   const { supabase, autor } = await currentAuthor();
 
   const goalIdRaw = formData.get("goal_id") as string;
+  const cartaoIdRaw = formData.get("cartao_id") as string;
 
   const entry: NewEntry = {
     tipo: formData.get("tipo") as Tipo,
@@ -29,6 +30,7 @@ export async function addEntry(formData: FormData) {
     date: formData.get("date") as string,
     autor,
     goal_id: goalIdRaw || null,
+    cartao_id: cartaoIdRaw || null,
   };
 
   const { error } = await supabase.from("entries").insert(entry);
@@ -108,6 +110,102 @@ export async function deleteGoal(id: string) {
   revalidatePath("/reserva");
   revalidatePath("/dashboard");
   revalidatePath("/lancar");
+}
+
+// Sincroniza o vencimento do cartão como item "a_pagar" do checklist mensal.
+// valor_esperado fica sempre null: o total da fatura é calculado ao vivo a
+// partir das compras reais (ver src/lib/cartoes.ts: faturaQueVenceEm), não
+// armazenado, já que uma fatura muda de mês a mês (diferente do salário).
+async function syncCartaoChecklistItem(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  cartaoId: string,
+  nome: string,
+  diaVencimento: number,
+) {
+  const { error } = await supabase.from("checklist_items").upsert(
+    {
+      nome: `Fatura — ${nome}`,
+      valor_esperado: null,
+      dia_vencimento: diaVencimento,
+      tipo: "a_pagar",
+      origem_cartao_id: cartaoId,
+    },
+    { onConflict: "origem_cartao_id" },
+  );
+  if (error) throw new Error(error.message);
+}
+
+export async function createCartao(formData: FormData) {
+  const { supabase } = await currentAuthor();
+  const nome = formData.get("nome") as string;
+  const banco = (formData.get("banco") as string) || null;
+  const limiteRaw = formData.get("limite") as string;
+  const diaFechamento = Number(formData.get("dia_fechamento"));
+  const diaVencimento = Number(formData.get("dia_vencimento"));
+
+  const cartao: NewCartao = {
+    nome,
+    banco,
+    limite: limiteRaw ? Number(limiteRaw) : null,
+    dia_fechamento: diaFechamento,
+    dia_vencimento: diaVencimento,
+  };
+
+  const { data, error } = await supabase.from("cartoes").insert(cartao).select().single();
+  if (error) throw new Error(error.message);
+
+  await syncCartaoChecklistItem(supabase, data.id, nome, diaVencimento);
+
+  revalidatePath("/cartoes");
+  revalidatePath("/lancar");
+  revalidatePath("/checklist");
+  revalidatePath("/calendario");
+  revalidatePath("/dashboard");
+}
+
+export async function updateCartao(formData: FormData) {
+  const { supabase } = await currentAuthor();
+  const id = formData.get("id") as string;
+  const nome = formData.get("nome") as string;
+  const banco = (formData.get("banco") as string) || null;
+  const limiteRaw = formData.get("limite") as string;
+  const diaFechamento = Number(formData.get("dia_fechamento"));
+  const diaVencimento = Number(formData.get("dia_vencimento"));
+
+  const { error } = await supabase
+    .from("cartoes")
+    .update({
+      nome,
+      banco,
+      limite: limiteRaw ? Number(limiteRaw) : null,
+      dia_fechamento: diaFechamento,
+      dia_vencimento: diaVencimento,
+    })
+    .eq("id", id);
+  if (error) throw new Error(error.message);
+
+  await syncCartaoChecklistItem(supabase, id, nome, diaVencimento);
+
+  revalidatePath("/cartoes");
+  revalidatePath("/checklist");
+  revalidatePath("/calendario");
+  revalidatePath("/dashboard");
+}
+
+export async function deleteCartao(id: string) {
+  const { supabase } = await currentAuthor();
+  // apaga o cartão: o item de checklist some junto (cascade em
+  // origem_cartao_id) e as saídas já lançadas continuam no Histórico com
+  // cartao_id = null (on delete set null), igual deleteGoal.
+  const { error } = await supabase.from("cartoes").delete().eq("id", id);
+  if (error) throw new Error(error.message);
+
+  revalidatePath("/cartoes");
+  revalidatePath("/lancar");
+  revalidatePath("/checklist");
+  revalidatePath("/calendario");
+  revalidatePath("/dashboard");
+  revalidatePath("/historico");
 }
 
 export async function createChecklistItem(formData: FormData) {

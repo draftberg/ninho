@@ -15,6 +15,21 @@ create table if not exists goals (
   created_at timestamptz not null default now()
 );
 
+-- ---------- cartões de crédito (fatura por fechamento/vencimento) ----------
+-- cada compra no crédito cai na fatura certa considerando dia_fechamento e
+-- dia_vencimento (ver src/lib/cartoes.ts); o vencimento vira item automático
+-- do checklist mensal (ver src/lib/actions.ts: syncCartaoChecklistItem).
+
+create table if not exists cartoes (
+  id uuid primary key default gen_random_uuid(),
+  nome text not null,
+  banco text,
+  limite numeric(12, 2) check (limite >= 0),
+  dia_fechamento int not null check (dia_fechamento between 1 and 31),
+  dia_vencimento int not null check (dia_vencimento between 1 and 31),
+  created_at timestamptz not null default now()
+);
+
 -- ---------- lançamentos ----------
 
 create table if not exists entries (
@@ -39,12 +54,14 @@ create table if not exists entries (
   descricao text,
   autor text not null,
   goal_id uuid references goals(id) on delete set null,
+  cartao_id uuid references cartoes(id) on delete set null,
   created_at timestamptz not null default now()
 );
 
 create index if not exists entries_date_idx on entries (date desc);
 create index if not exists entries_tipo_idx on entries (tipo);
 create index if not exists entries_goal_id_idx on entries (goal_id);
+create index if not exists entries_cartao_id_idx on entries (cartao_id);
 
 -- ---------- perfil (nome, sobrenome, telefone, salário) ----------
 -- salário pode ser mensal (1 parcela) ou quinzenal (2 parcelas em dias diferentes)
@@ -78,8 +95,10 @@ create table if not exists checklist_items (
   tipo text not null default 'a_pagar' check (tipo in ('a_pagar', 'a_receber')),
   origem_profile_id uuid references profiles(id) on delete cascade,
   origem_parcela smallint check (origem_parcela in (1, 2)),
+  origem_cartao_id uuid references cartoes(id) on delete cascade,
   created_at timestamptz not null default now(),
-  unique (origem_profile_id, origem_parcela)
+  unique (origem_profile_id, origem_parcela),
+  unique (origem_cartao_id)
 );
 
 create table if not exists checklist_status (
@@ -127,6 +146,7 @@ alter table checklist_items enable row level security;
 alter table checklist_status enable row level security;
 alter table profiles enable row level security;
 alter table budget_limits enable row level security;
+alter table cartoes enable row level security;
 
 drop policy if exists "casal pode ver lancamentos" on entries;
 create policy "casal pode ver lancamentos" on entries
@@ -217,4 +237,20 @@ create policy "casal pode atualizar metas de gasto" on budget_limits
 
 drop policy if exists "casal pode apagar metas de gasto" on budget_limits;
 create policy "casal pode apagar metas de gasto" on budget_limits
+  for delete using (is_allowed_email());
+
+drop policy if exists "casal pode ver cartoes" on cartoes;
+create policy "casal pode ver cartoes" on cartoes
+  for select using (is_allowed_email());
+
+drop policy if exists "casal pode criar cartoes" on cartoes;
+create policy "casal pode criar cartoes" on cartoes
+  for insert with check (is_allowed_email());
+
+drop policy if exists "casal pode atualizar cartoes" on cartoes;
+create policy "casal pode atualizar cartoes" on cartoes
+  for update using (is_allowed_email()) with check (is_allowed_email());
+
+drop policy if exists "casal pode apagar cartoes" on cartoes;
+create policy "casal pode apagar cartoes" on cartoes
   for delete using (is_allowed_email());

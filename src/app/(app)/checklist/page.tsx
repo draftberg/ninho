@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
-import { fetchChecklistItems, fetchChecklistStatus } from "@/lib/data";
+import { fetchChecklistItems, fetchChecklistStatus, fetchAllEntries, fetchCartoes } from "@/lib/data";
+import { faturaQueVenceEm } from "@/lib/cartoes";
 import { formatBRL, monthLabel } from "@/lib/format";
 import { MonthNav } from "@/components/MonthNav";
 import { ChecklistItemRow } from "./ChecklistItemRow";
@@ -19,17 +20,29 @@ export default async function ChecklistPage({
   const mes = mesParam && /^\d{4}-\d{2}$/.test(mesParam) ? mesParam : currentMonthKey();
 
   const supabase = await createClient();
-  const [items, status] = await Promise.all([
+  const [items, status, allEntries, cartoes] = await Promise.all([
     fetchChecklistItems(supabase),
     fetchChecklistStatus(supabase, mes),
+    fetchAllEntries(supabase),
+    fetchCartoes(supabase),
   ]);
+
+  const cartaoById = new Map(cartoes.map((c) => [c.id, c]));
+
+  function valorDoItem(item: (typeof items)[number]): number {
+    if (item.origem_cartao_id) {
+      const cartao = cartaoById.get(item.origem_cartao_id);
+      return cartao ? faturaQueVenceEm(allEntries, cartao, mes).total : 0;
+    }
+    return Number(item.valor_esperado ?? 0);
+  }
 
   const statusByItem = new Map(status.map((s) => [s.item_id, s]));
   const concluidos = items.filter((i) => statusByItem.get(i.id)?.concluido).length;
-  const valorTotal = items.reduce((sum, i) => sum + Number(i.valor_esperado ?? 0), 0);
+  const valorTotal = items.reduce((sum, i) => sum + valorDoItem(i), 0);
   const valorConcluido = items
     .filter((i) => statusByItem.get(i.id)?.concluido)
-    .reduce((sum, i) => sum + Number(i.valor_esperado ?? 0), 0);
+    .reduce((sum, i) => sum + valorDoItem(i), 0);
 
   const receber = items.filter((i) => i.tipo === "a_receber");
   const pagar = items.filter((i) => i.tipo === "a_pagar");
@@ -64,6 +77,7 @@ export default async function ChecklistPage({
                 item={item}
                 mes={mes}
                 concluido={statusByItem.get(item.id)?.concluido ?? false}
+                valorCalculado={item.origem_cartao_id ? valorDoItem(item) : null}
               />
             ))}
           </div>
@@ -80,6 +94,7 @@ export default async function ChecklistPage({
                 item={item}
                 mes={mes}
                 concluido={statusByItem.get(item.id)?.concluido ?? false}
+                valorCalculado={item.origem_cartao_id ? valorDoItem(item) : null}
               />
             ))}
           </div>

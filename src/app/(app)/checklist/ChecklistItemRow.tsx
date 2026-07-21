@@ -4,7 +4,7 @@ import { useState, useTransition } from "react";
 import { toggleChecklistItem, deleteChecklistItem, confirmarRenda, desconfirmarRenda } from "@/lib/actions";
 import { formatBRL } from "@/lib/format";
 import type { ChecklistItem } from "@/lib/types";
-import { CheckCircleIcon, CircleIcon, TrashIcon, MoneyIcon } from "@phosphor-icons/react";
+import { CheckCircleIcon, CircleIcon, TrashIcon, MoneyIcon, CreditCardIcon } from "@phosphor-icons/react";
 
 function pad(n: number): string {
   return String(n).padStart(2, "0");
@@ -14,14 +14,18 @@ export function ChecklistItemRow({
   item,
   mes,
   concluido,
+  valorCalculado,
 }: {
   item: ChecklistItem;
   mes: string;
   concluido: boolean;
+  valorCalculado?: number | null;
 }) {
   const [isPending, startTransition] = useTransition();
   const [confirming, setConfirming] = useState(false);
   const isReceber = item.tipo === "a_receber";
+  const isCartao = Boolean(item.origem_cartao_id);
+  const valorExibido = valorCalculado ?? item.valor_esperado;
 
   function handleToggle() {
     startTransition(() => {
@@ -111,6 +115,11 @@ export function ChecklistItemRow({
           <MoneyIcon size={14} weight="bold" />
         </span>
       )}
+      {isCartao && (
+        <span className="category-icon saida">
+          <CreditCardIcon size={14} weight="bold" />
+        </span>
+      )}
       <div className="checklist-item-main">
         <span className="checklist-item-nome">{item.nome}</span>
         {item.dia_vencimento && (
@@ -119,10 +128,10 @@ export function ChecklistItemRow({
           </span>
         )}
       </div>
-      {item.valor_esperado != null && (
-        <span className={isReceber ? "mono entrada" : "mono"}>{formatBRL(item.valor_esperado)}</span>
+      {valorExibido != null && (
+        <span className={isReceber ? "mono entrada" : "mono"}>{formatBRL(valorExibido)}</span>
       )}
-      {!item.origem_profile_id && (
+      {!item.origem_profile_id && !item.origem_cartao_id && (
         <button
           type="button"
           className="delete-button"

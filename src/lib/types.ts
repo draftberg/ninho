@@ -239,6 +239,7 @@ export interface Entry {
   descricao: string | null;
   autor: string;
   goal_id: string | null;
+  cartao_id: string | null;
   created_at: string;
 }
 
@@ -260,15 +261,34 @@ export interface Goal {
 
 export type NewGoal = Omit<Goal, "id" | "created_at">;
 
+// Cartão de crédito: fatura calculada a partir de dia_fechamento/
+// dia_vencimento (ver src/lib/cartoes.ts), nunca armazenada. limite é só
+// informativo (exibido na tela do cartão, sem alerta de estouro).
+export interface Cartao {
+  id: string;
+  nome: string;
+  banco: string | null;
+  limite: number | null;
+  dia_fechamento: number;
+  dia_vencimento: number;
+  created_at: string;
+}
+
+export type NewCartao = Omit<Cartao, "id" | "created_at">;
+
 export type TipoChecklistItem = "a_pagar" | "a_receber";
 
 // Item recorrente do checklist mensal: uma conta a pagar/aporte a lembrar
 // (a_pagar) ou uma parcela de salário a confirmar (a_receber). Itens
 // a_receber com origem_profile_id são sincronizados a partir do salário
 // cadastrado no Perfil — confirmar esses itens cria o lançamento real de
-// entrada (ver actions.ts: confirmarRenda). A conclusão de cada item é
-// rastreada por mês em ChecklistStatus, então o mesmo item "desmarca"
-// automaticamente no mês seguinte.
+// entrada (ver actions.ts: confirmarRenda). Itens a_pagar com
+// origem_cartao_id são sincronizados a partir do vencimento do cartão (ver
+// actions.ts: syncCartaoChecklistItem) — o valor exibido é sempre calculado
+// ao vivo a partir das compras da fatura (ver src/lib/cartoes.ts:
+// faturaQueVenceEm), nunca armazenado em valor_esperado. A conclusão de
+// cada item é rastreada por mês em ChecklistStatus, então o mesmo item
+// "desmarca" automaticamente no mês seguinte.
 export interface ChecklistItem {
   id: string;
   nome: string;
@@ -278,12 +298,13 @@ export interface ChecklistItem {
   tipo: TipoChecklistItem;
   origem_profile_id: string | null;
   origem_parcela: number | null;
+  origem_cartao_id: string | null;
   created_at: string;
 }
 
 export type NewChecklistItem = Omit<
   ChecklistItem,
-  "id" | "created_at" | "ativo" | "tipo" | "origem_profile_id" | "origem_parcela"
+  "id" | "created_at" | "ativo" | "tipo" | "origem_profile_id" | "origem_parcela" | "origem_cartao_id"
 >;
 
 export interface ChecklistStatus {

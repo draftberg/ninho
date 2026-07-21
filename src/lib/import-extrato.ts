@@ -153,6 +153,7 @@ ${trimmed}
         date,
         autor: "",
         goal_id: null,
+        cartao_id: null,
       };
     })
     .filter((t) => t.valor > 0);

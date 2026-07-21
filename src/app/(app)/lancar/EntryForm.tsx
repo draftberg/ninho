@@ -7,29 +7,32 @@ import {
   TIPO_LABELS,
   categoriasDoTipo,
   subcategoriasDaCategoria,
+  type Cartao,
   type Goal,
   type Tipo,
 } from "@/lib/types";
 import { categoriaIcon } from "@/lib/category-icons";
 import { todayISO } from "@/lib/format";
-import { TrendUpIcon, TrendDownIcon, ChartLineUpIcon } from "@phosphor-icons/react";
+import { TrendUpIcon, TrendDownIcon, ChartLineUpIcon, CreditCardIcon } from "@phosphor-icons/react";
 
 const TIPOS: Tipo[] = ["entrada", "saida", "investimento"];
 const TIPO_ICONS = { entrada: TrendUpIcon, saida: TrendDownIcon, investimento: ChartLineUpIcon };
 
-export function EntryForm({ goals }: { goals: Goal[] }) {
+export function EntryForm({ goals, cartoes }: { goals: Goal[]; cartoes: Cartao[] }) {
   const [tipo, setTipo] = useState<Tipo>("entrada");
   const [categoria, setCategoria] = useState<string>(CATEGORIAS.entrada[0].value);
   const [subcategoria, setSubcategoria] = useState<string>(
     CATEGORIAS.entrada[0].subcategorias[0].value,
   );
   const [goalId, setGoalId] = useState<string>(goals[0]?.id ?? "");
+  const [cartaoId, setCartaoId] = useState<string>("");
 
   function handleTipoChange(next: Tipo) {
     const primeiraCategoria = CATEGORIAS[next][0];
     setTipo(next);
     setCategoria(primeiraCategoria.value);
     setSubcategoria(primeiraCategoria.subcategorias[0].value);
+    if (next !== "saida") setCartaoId("");
   }
 
   function handleCategoriaChange(next: string) {
@@ -43,6 +46,7 @@ export function EntryForm({ goals }: { goals: Goal[] }) {
       <input type="hidden" name="categoria" value={categoria} />
       <input type="hidden" name="subcategoria" value={subcategoria} />
       {tipo === "investimento" && <input type="hidden" name="goal_id" value={goalId} />}
+      {tipo === "saida" && <input type="hidden" name="cartao_id" value={cartaoId} />}
 
       <div className="field">
         <label>Tipo</label>
@@ -124,6 +128,28 @@ export function EntryForm({ goals }: { goals: Goal[] }) {
           ))}
         </div>
       </div>
+
+      {tipo === "saida" && cartoes.length > 0 && (
+        <div className="field">
+          <label>Cartão (opcional)</label>
+          <div className="subcategoria-grid">
+            <button type="button" className={cartaoId === "" ? "active" : ""} onClick={() => setCartaoId("")}>
+              Nenhum
+            </button>
+            {cartoes.map((c) => (
+              <button
+                type="button"
+                key={c.id}
+                className={cartaoId === c.id ? "active" : ""}
+                onClick={() => setCartaoId(c.id)}
+              >
+                <CreditCardIcon size={15} weight={cartaoId === c.id ? "fill" : "regular"} />
+                {c.nome}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
 
       <div className="field">
         <label htmlFor="valor">Valor (R$)</label>
