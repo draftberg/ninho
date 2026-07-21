@@ -2,10 +2,15 @@
 
 import { useState } from "react";
 import { createCartao } from "@/lib/actions";
+import { BANDEIRAS } from "@/lib/types";
+import { CartaoMockup } from "@/components/CartaoMockup";
 import { PlusIcon } from "@phosphor-icons/react";
 
 export function CreateCartaoForm() {
   const [open, setOpen] = useState(false);
+  const [nome, setNome] = useState("");
+  const [banco, setBanco] = useState("");
+  const [bandeira, setBandeira] = useState<string>(BANDEIRAS[0]);
 
   if (!open) {
     return (
@@ -18,19 +23,47 @@ export function CreateCartaoForm() {
 
   return (
     <form
-      className="goal-card goal-card-new-form"
+      className="goal-card goal-card-new-form cartao-form"
       action={async (formData) => {
         await createCartao(formData);
         setOpen(false);
+        setNome("");
+        setBanco("");
+        setBandeira(BANDEIRAS[0]);
       }}
     >
+      <CartaoMockup nome={nome} banco={banco} bandeira={bandeira} />
       <label>
         Nome
-        <input type="text" name="nome" placeholder="Ex: Nubank, Inter" required autoFocus />
+        <input
+          type="text"
+          name="nome"
+          placeholder="Ex: Nubank, Inter"
+          value={nome}
+          onChange={(e) => setNome(e.target.value)}
+          required
+          autoFocus
+        />
       </label>
       <label>
         Banco (opcional)
-        <input type="text" name="banco" placeholder="Ex: Nubank" />
+        <input
+          type="text"
+          name="banco"
+          placeholder="Ex: Nubank"
+          value={banco}
+          onChange={(e) => setBanco(e.target.value)}
+        />
+      </label>
+      <label>
+        Bandeira
+        <select name="bandeira" value={bandeira} onChange={(e) => setBandeira(e.target.value)}>
+          {BANDEIRAS.map((b) => (
+            <option key={b} value={b}>
+              {b}
+            </option>
+          ))}
+        </select>
       </label>
       <label>
         Limite (opcional)

@@ -9,6 +9,7 @@ import {
 } from "@/lib/actions";
 import { formatBRL } from "@/lib/format";
 import { categoriaIcon } from "@/lib/category-icons";
+import { checklistTone } from "@/lib/checklist-status";
 import type { ChecklistItem } from "@/lib/types";
 import { CheckCircleIcon, CircleIcon, TrashIcon, CreditCardIcon } from "@phosphor-icons/react";
 
@@ -42,6 +43,7 @@ export function ChecklistItemRow({
   const isCartao = Boolean(item.origem_cartao_id);
   const podeConfirmar = Boolean(item.categoria && item.subcategoria) && !isCartao;
   const valorExibido = valorCalculado ?? item.valor_esperado;
+  const tone = checklistTone(item.dia_vencimento, mes, concluido);
 
   function handleToggle() {
     startTransition(() => {
@@ -114,7 +116,7 @@ export function ChecklistItemRow({
   }
 
   return (
-    <div className={`checklist-item${concluido ? " done" : ""}${isReceber ? " a-receber" : ""}`}>
+    <div className={`checklist-item tone-${tone}${concluido ? " done" : ""}`}>
       <button
         type="button"
         className="checklist-check"

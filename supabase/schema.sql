@@ -25,6 +25,7 @@ create table if not exists cartoes (
   id uuid primary key default gen_random_uuid(),
   nome text not null,
   banco text,
+  bandeira text,
   limite numeric(12, 2) check (limite >= 0),
   dia_fechamento int not null check (dia_fechamento between 1 and 31),
   dia_vencimento int not null check (dia_vencimento between 1 and 31),

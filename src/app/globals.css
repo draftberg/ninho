@@ -269,6 +269,12 @@ a {
   display: none;
 }
 
+.sidebar.collapsed .sidebar-top {
+  flex-direction: column;
+  gap: 0.6rem;
+  align-items: center;
+}
+
 .sidebar-bottom {
   display: flex;
   flex-direction: column;
@@ -369,6 +375,24 @@ a {
   }
 }
 
+/* telas largas: o conteúdo travava em 1180px mesmo sobrando espaço —
+   aproveita melhor monitores grandes em vez de deixar franja vazia */
+@media (min-width: 1440px) {
+  .app-main {
+    max-width: 1440px;
+  }
+
+  .dashboard-layout {
+    grid-template-columns: minmax(0, 1fr) 340px;
+  }
+}
+
+@media (min-width: 1800px) {
+  .app-main {
+    max-width: 1680px;
+  }
+}
+
 /* ---------- Cards / dashboard ---------- */
 
 .card {
@@ -385,6 +409,12 @@ a {
   font-size: 1.15rem;
   color: var(--color-ink);
   margin-bottom: 0.75rem;
+}
+
+.dashboard-greeting {
+  font-size: 0.9rem;
+  color: var(--color-ink-muted);
+  margin-bottom: 0.15rem;
 }
 
 .kpi-grid {
@@ -1001,12 +1031,21 @@ a {
 
 .checklist-item-main {
   flex: 1;
+  min-width: 0;
   display: flex;
   flex-direction: column;
 }
 
 .checklist-item-nome {
   font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.checklist-item .mono {
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .checklist-item.done .checklist-item-nome {
@@ -1014,16 +1053,24 @@ a {
   color: var(--color-ink-muted);
 }
 
-.checklist-item.a-receber {
+.checklist-item.tone-atrasado {
+  border-left: 3px solid var(--color-pastel-saida-ink);
+}
+
+.checklist-item.tone-atrasado .checklist-check {
+  color: var(--color-pastel-saida-ink);
+}
+
+.checklist-item.tone-breve {
+  border-left: 3px solid var(--color-gold);
+}
+
+.checklist-item.tone-breve .checklist-check {
+  color: var(--color-gold);
+}
+
+.checklist-item.tone-em-dia {
   border-left: 3px solid var(--color-pastel-entrada-ink);
-}
-
-.checklist-item.a-receber .checklist-check {
-  color: var(--color-pastel-entrada-ink);
-}
-
-.checklist-item.a-receber.done .checklist-check {
-  color: var(--color-pastel-entrada-ink);
 }
 
 .checklist-item .mono.entrada {
@@ -1092,7 +1139,9 @@ a {
 .goal-card {
   display: flex;
   flex-direction: column;
+  justify-content: space-between;
   gap: 0.2rem;
+  min-height: 128px;
   padding: 1rem;
   border-radius: 1.1rem;
   background: var(--color-card);
@@ -1136,6 +1185,7 @@ a {
 }
 
 .goal-card-new {
+  min-height: 128px;
   align-items: center;
   justify-content: center;
   gap: 0.4rem;
@@ -1157,6 +1207,10 @@ a {
   border: 1px solid var(--color-border);
 }
 
+.goal-card-new-form.cartao-form {
+  max-width: 340px;
+}
+
 .goal-card-new-form label {
   display: flex;
   flex-direction: column;
@@ -1165,11 +1219,42 @@ a {
   color: var(--color-ink-muted);
 }
 
-.goal-card-new-form input {
+.goal-card-new-form input,
+.goal-card-new-form select {
   border: 1px solid var(--color-border);
   border-radius: 0.6rem;
   padding: 0.4rem 0.6rem;
   font-family: var(--font-body);
+}
+
+.cartao-mockup {
+  aspect-ratio: 1.6 / 1;
+  border-radius: 1rem;
+  background: linear-gradient(135deg, #2b2f3a, #171a21);
+  color: #fff;
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  margin-bottom: 0.25rem;
+}
+
+.cartao-mockup-banco {
+  font-weight: 700;
+  font-size: 0.9rem;
+}
+
+.cartao-mockup-nome {
+  font-size: 0.85rem;
+  opacity: 0.85;
+}
+
+.cartao-mockup-bandeira {
+  align-self: flex-end;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  font-size: 0.8rem;
 }
 
 .goal-card-new-actions {

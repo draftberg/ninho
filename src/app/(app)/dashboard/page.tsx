@@ -21,7 +21,7 @@ import { buildCashFlow, buildRollingCashFlow } from "@/lib/cashflow";
 import { goalProjections } from "@/lib/projections";
 import { formatBRL, monthLabel } from "@/lib/format";
 import { categoriaLabel, type Tipo } from "@/lib/types";
-import { personColorClass, personColorHex } from "@/lib/allowlist";
+import { personColorClass, personColorHex, personNameFor } from "@/lib/allowlist";
 import { saldoEntreCasal } from "@/lib/divisao";
 import {
   WalletIcon,
@@ -105,6 +105,22 @@ function currentMonthKey(): string {
   return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
 }
 
+// Calcula pelo horário de Brasília explicitamente — o servidor roda em UTC
+// (Vercel), então usar new Date().getHours() direto daria saudação errada
+// em boa parte do dia.
+function saudacao(): string {
+  const hora = Number(
+    new Intl.DateTimeFormat("pt-BR", {
+      hour: "numeric",
+      hour12: false,
+      timeZone: "America/Sao_Paulo",
+    }).format(new Date()),
+  );
+  if (hora >= 5 && hora < 12) return "Bom dia";
+  if (hora >= 12 && hora < 18) return "Boa tarde";
+  return "Boa noite";
+}
+
 export default async function DashboardPage({
   searchParams,
 }: {
@@ -116,13 +132,15 @@ export default async function DashboardPage({
   const calMes = cal && /^\d{4}-\d{2}$/.test(cal) ? cal : currentMonthKey();
   const [calYear, calMonth] = calMes.split("-").map(Number);
   const supabase = await createClient();
-  const [allEntries, goals, checklistItems, profiles, calStatus] = await Promise.all([
+  const [allEntries, goals, checklistItems, profiles, calStatus, userResult] = await Promise.all([
     fetchAllEntries(supabase),
     fetchGoals(supabase),
     fetchChecklistItems(supabase),
     fetchProfiles(supabase),
     fetchChecklistStatus(supabase, calMes),
+    supabase.auth.getUser(),
   ]);
+  const nomeUsuario = personNameFor(userResult.data.user?.email);
 
   const months = monthOptions(allEntries);
   const years = yearOptions(allEntries);
@@ -173,6 +191,9 @@ export default async function DashboardPage({
   return (
     <div className="dashboard-layout">
       <div className="dashboard-main">
+        <p className="dashboard-greeting">
+          {saudacao()}, {nomeUsuario}
+        </p>
         <h2 className="section-title">Painel</h2>
 
         {periodo === "mes" && selectedMonth !== "todos" && <InsightsCard mes={selectedMonth} />}

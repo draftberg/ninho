@@ -2,10 +2,14 @@
 
 import { useState } from "react";
 import { updateCartao } from "@/lib/actions";
-import type { Cartao } from "@/lib/types";
+import { BANDEIRAS, type Cartao } from "@/lib/types";
+import { CartaoMockup } from "@/components/CartaoMockup";
 
 export function EditCartaoForm({ cartao }: { cartao: Cartao }) {
   const [editing, setEditing] = useState(false);
+  const [nome, setNome] = useState(cartao.nome);
+  const [banco, setBanco] = useState(cartao.banco ?? "");
+  const [bandeira, setBandeira] = useState(cartao.bandeira ?? BANDEIRAS[0]);
 
   if (!editing) {
     return (
@@ -17,20 +21,38 @@ export function EditCartaoForm({ cartao }: { cartao: Cartao }) {
 
   return (
     <form
-      className="goal-card-new-form"
+      className="goal-card-new-form cartao-form"
       action={async (formData) => {
         await updateCartao(formData);
         setEditing(false);
       }}
     >
       <input type="hidden" name="id" value={cartao.id} />
+      <CartaoMockup nome={nome} banco={banco} bandeira={bandeira} />
       <label>
         Nome
-        <input type="text" name="nome" defaultValue={cartao.nome} required autoFocus />
+        <input
+          type="text"
+          name="nome"
+          value={nome}
+          onChange={(e) => setNome(e.target.value)}
+          required
+          autoFocus
+        />
       </label>
       <label>
         Banco (opcional)
-        <input type="text" name="banco" defaultValue={cartao.banco ?? ""} />
+        <input type="text" name="banco" value={banco} onChange={(e) => setBanco(e.target.value)} />
+      </label>
+      <label>
+        Bandeira
+        <select name="bandeira" value={bandeira} onChange={(e) => setBandeira(e.target.value)}>
+          {BANDEIRAS.map((b) => (
+            <option key={b} value={b}>
+              {b}
+            </option>
+          ))}
+        </select>
       </label>
       <label>
         Limite (opcional)

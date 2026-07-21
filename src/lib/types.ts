@@ -270,11 +270,14 @@ export interface Cartao {
   id: string;
   nome: string;
   banco: string | null;
+  bandeira: string | null;
   limite: number | null;
   dia_fechamento: number;
   dia_vencimento: number;
   created_at: string;
 }
+
+export const BANDEIRAS = ["Visa", "Mastercard", "Elo", "American Express", "Outro"] as const;
 
 export type NewCartao = Omit<Cartao, "id" | "created_at">;
 

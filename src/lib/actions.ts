@@ -253,6 +253,7 @@ export async function createCartao(formData: FormData) {
   const { supabase } = await currentAuthor();
   const nome = formData.get("nome") as string;
   const banco = (formData.get("banco") as string) || null;
+  const bandeira = (formData.get("bandeira") as string) || null;
   const limiteRaw = formData.get("limite") as string;
   const diaFechamento = Number(formData.get("dia_fechamento"));
   const diaVencimento = Number(formData.get("dia_vencimento"));
@@ -260,6 +261,7 @@ export async function createCartao(formData: FormData) {
   const cartao: NewCartao = {
     nome,
     banco,
+    bandeira,
     limite: limiteRaw ? Number(limiteRaw) : null,
     dia_fechamento: diaFechamento,
     dia_vencimento: diaVencimento,
@@ -282,6 +284,7 @@ export async function updateCartao(formData: FormData) {
   const id = formData.get("id") as string;
   const nome = formData.get("nome") as string;
   const banco = (formData.get("banco") as string) || null;
+  const bandeira = (formData.get("bandeira") as string) || null;
   const limiteRaw = formData.get("limite") as string;
   const diaFechamento = Number(formData.get("dia_fechamento"));
   const diaVencimento = Number(formData.get("dia_vencimento"));
@@ -291,6 +294,7 @@ export async function updateCartao(formData: FormData) {
     .update({
       nome,
       banco,
+      bandeira,
       limite: limiteRaw ? Number(limiteRaw) : null,
       dia_fechamento: diaFechamento,
       dia_vencimento: diaVencimento,
