@@ -18,7 +18,15 @@ import { TrendUpIcon, TrendDownIcon, ChartLineUpIcon, CreditCardIcon } from "@ph
 const TIPOS: Tipo[] = ["entrada", "saida", "investimento"];
 const TIPO_ICONS = { entrada: TrendUpIcon, saida: TrendDownIcon, investimento: ChartLineUpIcon };
 
-export function EntryForm({ goals, cartoes }: { goals: Goal[]; cartoes: Cartao[] }) {
+export function EntryForm({
+  goals,
+  cartoes,
+  outroNome,
+}: {
+  goals: Goal[];
+  cartoes: Cartao[];
+  outroNome: string;
+}) {
   const [tipo, setTipo] = useState<Tipo>("entrada");
   const [categoria, setCategoria] = useState<string>(CATEGORIAS.entrada[0].value);
   const [subcategoria, setSubcategoria] = useState<string>(
@@ -156,6 +164,15 @@ export function EntryForm({ goals, cartoes }: { goals: Goal[]; cartoes: Cartao[]
           <label className="checkbox-field">
             <input type="checkbox" name="recorrente" value="1" />
             Repetir todo mês (cria um item no Checklist pra confirmar os próximos meses)
+          </label>
+        </div>
+      )}
+
+      {tipo === "saida" && (
+        <div className="field">
+          <label className="checkbox-field">
+            <input type="checkbox" name="dividido" value="1" />
+            Dividir com {outroNome} (metade fica como dívida entre vocês)
           </label>
         </div>
       )}

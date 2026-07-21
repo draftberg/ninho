@@ -492,6 +492,14 @@ a {
   font-size: 0.85rem;
 }
 
+.saldo-casal-card {
+  margin-bottom: 1rem;
+  text-align: center;
+  background: var(--color-pastel-saida);
+  color: var(--color-pastel-saida-ink);
+  border: none;
+}
+
 .person-breakdown {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));

@@ -240,6 +240,7 @@ export interface Entry {
   autor: string;
   goal_id: string | null;
   cartao_id: string | null;
+  dividido: boolean;
   created_at: string;
 }
 
@@ -256,6 +257,7 @@ export interface Goal {
   data_inicio: string | null;
   data_alvo: string | null;
   especial_bebe: boolean;
+  especial_emergencia: boolean;
   created_at: string;
 }
 
@@ -275,6 +277,24 @@ export interface Cartao {
 }
 
 export type NewCartao = Omit<Cartao, "id" | "created_at">;
+
+// Financiamento/dívida com parcela de valor fixo (sem cálculo de juros).
+// A parcela vira item automático do checklist (dia_vencimento) e,
+// diferente do cartão, confirmá-la cria um lançamento de saída de verdade
+// (ver src/lib/actions.ts: syncFinanciamentoChecklistItem), usando
+// categoria/subcategoria escolhidas na criação.
+export interface Financiamento {
+  id: string;
+  nome: string;
+  valor_parcela: number;
+  numero_parcelas: number;
+  dia_vencimento: number;
+  categoria: string;
+  subcategoria: string;
+  created_at: string;
+}
+
+export type NewFinanciamento = Omit<Financiamento, "id" | "created_at">;
 
 export type TipoChecklistItem = "a_pagar" | "a_receber";
 
@@ -301,6 +321,7 @@ export interface ChecklistItem {
   origem_profile_id: string | null;
   origem_parcela: number | null;
   origem_cartao_id: string | null;
+  origem_financiamento_id: string | null;
   categoria: string | null;
   subcategoria: string | null;
   created_at: string;
@@ -308,7 +329,14 @@ export interface ChecklistItem {
 
 export type NewChecklistItem = Omit<
   ChecklistItem,
-  "id" | "created_at" | "ativo" | "tipo" | "origem_profile_id" | "origem_parcela" | "origem_cartao_id"
+  | "id"
+  | "created_at"
+  | "ativo"
+  | "tipo"
+  | "origem_profile_id"
+  | "origem_parcela"
+  | "origem_cartao_id"
+  | "origem_financiamento_id"
 >;
 
 export interface ChecklistStatus {

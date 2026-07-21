@@ -7,11 +7,11 @@ import { personColorClass } from "@/lib/allowlist";
 import { NestIllustration } from "@/components/NestIllustration";
 import { PersonAvatar } from "@/components/PersonAvatar";
 import { ViewToggle, type Vista } from "@/components/ViewToggle";
-import { PiggyBankIcon, CalendarCheckIcon } from "@phosphor-icons/react/dist/ssr";
+import { PiggyBankIcon, CalendarCheckIcon, ShieldIcon } from "@phosphor-icons/react/dist/ssr";
 import { EditGoalForm } from "./EditGoalForm";
 import { CreateGoalForm } from "./CreateGoalForm";
 import { ConfirmDeleteButton } from "@/components/ConfirmDeleteButton";
-import { deleteGoal } from "@/lib/actions";
+import { deleteGoal, criarReservaEmergencia } from "@/lib/actions";
 import Link from "next/link";
 
 export default async function ReservaPage({
@@ -26,6 +26,7 @@ export default async function ReservaPage({
 
   const selectedGoal =
     goals.find((g) => g.id === metaParam) ?? goals.find((g) => g.especial_bebe) ?? goals[0];
+  const temReservaEmergencia = goals.some((g) => g.especial_emergencia);
 
   return (
     <div>
@@ -44,7 +45,11 @@ export default async function ReservaPage({
               className={`goal-card${active ? " active" : ""}`}
             >
               <span className="goal-card-icon">
-                <PiggyBankIcon size={20} weight="fill" />
+                {goal.especial_emergencia ? (
+                  <ShieldIcon size={20} weight="fill" />
+                ) : (
+                  <PiggyBankIcon size={20} weight="fill" />
+                )}
               </span>
               <span className="goal-card-name">{goal.nome}</span>
               <span className="goal-card-valor">{formatBRL(total)}</span>
@@ -62,6 +67,14 @@ export default async function ReservaPage({
           );
         })}
         <CreateGoalForm />
+        {!temReservaEmergencia && (
+          <form action={criarReservaEmergencia}>
+            <button type="submit" className="goal-card goal-card-new">
+              <ShieldIcon size={22} weight="bold" />
+              <span>Criar reserva de emergência</span>
+            </button>
+          </form>
+        )}
       </div>
 
       {goals.length === 0 && (
@@ -92,6 +105,8 @@ function GoalDetail({ goal, entries, vista }: { goal: Goal; entries: Entry[]; vi
       <div className="nest-hero card">
         {goal.especial_bebe ? (
           <NestIllustration progress={progresso} size={200} />
+        ) : goal.especial_emergencia ? (
+          <ShieldIcon size={64} weight="duotone" />
         ) : (
           <PiggyBankIcon size={64} weight="duotone" />
         )}

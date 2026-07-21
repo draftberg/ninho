@@ -7,6 +7,7 @@ import type {
   ChecklistItem,
   ChecklistStatus,
   Entry,
+  Financiamento,
   Goal,
   Profile,
 } from "@/lib/types";
@@ -40,6 +41,15 @@ export async function fetchChecklistItems(supabase: SupabaseClient): Promise<Che
     .order("dia_vencimento", { ascending: true, nullsFirst: false })
     .order("nome", { ascending: true });
 
+  if (error) throw error;
+  return data as ChecklistItem[];
+}
+
+// Todos os itens do checklist, ativos ou não — usado na tela de
+// Financiamentos pra achar o item ligado mesmo depois de quitado (quando o
+// item vira inativo e some do fetchChecklistItems normal).
+export async function fetchAllChecklistItems(supabase: SupabaseClient): Promise<ChecklistItem[]> {
+  const { data, error } = await supabase.from("checklist_items").select("*");
   if (error) throw error;
   return data as ChecklistItem[];
 }
@@ -78,6 +88,26 @@ export async function fetchCartoes(supabase: SupabaseClient): Promise<Cartao[]> 
 
   if (error) throw error;
   return data as Cartao[];
+}
+
+export async function fetchFinanciamentos(supabase: SupabaseClient): Promise<Financiamento[]> {
+  const { data, error } = await supabase
+    .from("financiamentos")
+    .select("*")
+    .order("created_at", { ascending: true });
+
+  if (error) throw error;
+  return data as Financiamento[];
+}
+
+// Todo o histórico de checklist_status concluído (sem filtro de mês) — usado
+// só pra contar quantas parcelas de um financiamento já foram pagas.
+export async function fetchChecklistStatusConcluido(
+  supabase: SupabaseClient,
+): Promise<ChecklistStatus[]> {
+  const { data, error } = await supabase.from("checklist_status").select("*").eq("concluido", true);
+  if (error) throw error;
+  return data as ChecklistStatus[];
 }
 
 export async function fetchChatConversas(supabase: SupabaseClient): Promise<ChatConversa[]> {

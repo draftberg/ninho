@@ -22,12 +22,14 @@ import { goalProjections } from "@/lib/projections";
 import { formatBRL, monthLabel } from "@/lib/format";
 import { categoriaLabel, type Tipo } from "@/lib/types";
 import { personColorClass, personColorHex } from "@/lib/allowlist";
+import { saldoEntreCasal } from "@/lib/divisao";
 import {
   WalletIcon,
   TrendUpIcon,
   TrendDownIcon,
   ChartLineUpIcon,
   PiggyBankIcon,
+  ShieldIcon,
   UserCircleIcon,
 } from "@phosphor-icons/react/dist/ssr";
 import { DonutChart } from "@/components/charts/DonutChart";
@@ -136,12 +138,15 @@ export default async function DashboardPage({
   const saldo = totalEntrada - totalSaida - totalInvestimento;
   const metaBebe = goals.find((g) => g.especial_bebe);
   const reservaBebe = metaBebe ? totalByGoal(filtered, metaBebe.id) : 0;
+  const metaEmergencia = goals.find((g) => g.especial_emergencia);
+  const reservaEmergencia = metaEmergencia ? totalByGoal(filtered, metaEmergencia.id) : 0;
 
   const donutEntrada = donutFor(filtered, "entrada", vista);
   const donutSaida = donutFor(filtered, "saida", vista);
   const donutInvestimento = donutFor(filtered, "investimento", vista);
 
   const pessoas = porPessoa(filtered);
+  const saldoCasal = saldoEntreCasal(allEntries);
   const fluxoDeCaixa = periodo === "ano" ? buildCashFlow(allEntries, checklistItems, profiles, selectedYear) : [];
 
   const anoAtual = String(new Date().getFullYear());
@@ -213,6 +218,14 @@ export default async function DashboardPage({
           </div>
           <div className="kpi-value">{formatBRL(reservaBebe)}</div>
         </div>
+        {metaEmergencia && (
+          <div className="kpi-card reserva">
+            <div className="kpi-label">
+              <ShieldIcon size={15} weight="bold" /> {metaEmergencia.nome}
+            </div>
+            <div className="kpi-value">{formatBRL(reservaEmergencia)}</div>
+          </div>
+        )}
       </div>
 
       <div className="charts-grid">
@@ -268,6 +281,15 @@ export default async function DashboardPage({
         />
       </div>
       <CashFlowTable columns={cashFlowFuturo} />
+
+      {saldoCasal && (
+        <div className="saldo-casal-card card">
+          <span>
+            <strong>{saldoCasal.devedor}</strong> deve <strong>{formatBRL(saldoCasal.valor)}</strong> pra{" "}
+            <strong>{saldoCasal.credor}</strong>
+          </span>
+        </div>
+      )}
 
       <div className="section-title">Por pessoa</div>
       <div className="person-breakdown">

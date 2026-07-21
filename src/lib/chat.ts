@@ -50,6 +50,7 @@ export async function confirmarLancamentoChat(
     autor,
     goal_id: null,
     cartao_id: null,
+    dividido: false,
   };
 
   const { error } = await supabase.from("entries").insert(entry);

@@ -5,7 +5,16 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { personNameFor } from "@/lib/allowlist";
 import { todayISO } from "@/lib/format";
-import { subcategoriaLabel, type NewBudgetLimit, type NewCartao, type NewEntry, type Tipo, type TipoChecklistItem } from "@/lib/types";
+import {
+  subcategoriaLabel,
+  type NewBudgetLimit,
+  type NewCartao,
+  type NewEntry,
+  type NewFinanciamento,
+  type Tipo,
+  type TipoChecklistItem,
+} from "@/lib/types";
+import { parcelasPagas } from "@/lib/financiamentos";
 
 async function currentAuthor() {
   const supabase = await createClient();
@@ -21,9 +30,10 @@ export async function addEntry(formData: FormData) {
   const goalIdRaw = formData.get("goal_id") as string;
   const cartaoIdRaw = formData.get("cartao_id") as string;
   const recorrente = formData.get("recorrente") === "1";
+  const tipo = formData.get("tipo") as Tipo;
 
   const entry: NewEntry = {
-    tipo: formData.get("tipo") as Tipo,
+    tipo,
     categoria: formData.get("categoria") as string,
     subcategoria: formData.get("subcategoria") as string,
     valor: Number(formData.get("valor")),
@@ -32,6 +42,7 @@ export async function addEntry(formData: FormData) {
     autor,
     goal_id: goalIdRaw || null,
     cartao_id: cartaoIdRaw || null,
+    dividido: tipo === "saida" && formData.get("dividido") === "1",
   };
 
   const { data: inserted, error } = await supabase.from("entries").insert(entry).select().single();
@@ -126,10 +137,31 @@ export async function createGoal(formData: FormData) {
     data_inicio: todayISO(),
     data_alvo: dataAlvoRaw || null,
     especial_bebe: false,
+    especial_emergencia: false,
   });
   if (error) throw new Error(error.message);
 
   revalidatePath("/reserva");
+  revalidatePath("/lancar");
+}
+
+// Cria a meta "Reserva de emergência" marcada com especial_emergencia=true —
+// sem formulário, só um botão, igual à reserva do bebê original: identificada
+// por flag (não por nome), então pode ser renomeada livremente depois.
+export async function criarReservaEmergencia() {
+  const { supabase } = await currentAuthor();
+  const { error } = await supabase.from("goals").insert({
+    nome: "Reserva de emergência",
+    valor_meta: null,
+    data_inicio: todayISO(),
+    data_alvo: null,
+    especial_bebe: false,
+    especial_emergencia: true,
+  });
+  if (error) throw new Error(error.message);
+
+  revalidatePath("/reserva");
+  revalidatePath("/dashboard");
   revalidatePath("/lancar");
 }
 
@@ -252,6 +284,129 @@ export async function deleteCartao(id: string) {
 
   revalidatePath("/cartoes");
   revalidatePath("/lancar");
+  revalidatePath("/checklist");
+  revalidatePath("/calendario");
+  revalidatePath("/dashboard");
+  revalidatePath("/historico");
+}
+
+// Sincroniza a parcela do financiamento como item "a_pagar" do checklist
+// mensal. Diferente do cartão, valor_esperado aqui é fixo (a parcela não
+// varia) e categoria/subcategoria são preenchidas, então confirmar o item
+// passa pelo mesmo fluxo já genérico de confirmarChecklistItem — cria um
+// lançamento de saída de verdade.
+async function syncFinanciamentoChecklistItem(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  financiamentoId: string,
+  nome: string,
+  diaVencimento: number,
+  valorParcela: number,
+  categoria: string,
+  subcategoria: string,
+) {
+  const { error } = await supabase.from("checklist_items").upsert(
+    {
+      nome: `Parcela — ${nome}`,
+      valor_esperado: valorParcela,
+      dia_vencimento: diaVencimento,
+      tipo: "a_pagar",
+      origem_financiamento_id: financiamentoId,
+      categoria,
+      subcategoria,
+    },
+    { onConflict: "origem_financiamento_id" },
+  );
+  if (error) throw new Error(error.message);
+}
+
+export async function createFinanciamento(formData: FormData) {
+  const { supabase } = await currentAuthor();
+  const nome = formData.get("nome") as string;
+  const valorParcela = Number(formData.get("valor_parcela"));
+  const numeroParcelas = Number(formData.get("numero_parcelas"));
+  const diaVencimento = Number(formData.get("dia_vencimento"));
+  const categoria = formData.get("categoria") as string;
+  const subcategoria = formData.get("subcategoria") as string;
+
+  const financiamento: NewFinanciamento = {
+    nome,
+    valor_parcela: valorParcela,
+    numero_parcelas: numeroParcelas,
+    dia_vencimento: diaVencimento,
+    categoria,
+    subcategoria,
+  };
+
+  const { data, error } = await supabase
+    .from("financiamentos")
+    .insert(financiamento)
+    .select()
+    .single();
+  if (error) throw new Error(error.message);
+
+  await syncFinanciamentoChecklistItem(
+    supabase,
+    data.id,
+    nome,
+    diaVencimento,
+    valorParcela,
+    categoria,
+    subcategoria,
+  );
+
+  revalidatePath("/financiamentos");
+  revalidatePath("/checklist");
+  revalidatePath("/calendario");
+  revalidatePath("/dashboard");
+}
+
+export async function updateFinanciamento(formData: FormData) {
+  const { supabase } = await currentAuthor();
+  const id = formData.get("id") as string;
+  const nome = formData.get("nome") as string;
+  const valorParcela = Number(formData.get("valor_parcela"));
+  const numeroParcelas = Number(formData.get("numero_parcelas"));
+  const diaVencimento = Number(formData.get("dia_vencimento"));
+  const categoria = formData.get("categoria") as string;
+  const subcategoria = formData.get("subcategoria") as string;
+
+  const { error } = await supabase
+    .from("financiamentos")
+    .update({
+      nome,
+      valor_parcela: valorParcela,
+      numero_parcelas: numeroParcelas,
+      dia_vencimento: diaVencimento,
+      categoria,
+      subcategoria,
+    })
+    .eq("id", id);
+  if (error) throw new Error(error.message);
+
+  await syncFinanciamentoChecklistItem(
+    supabase,
+    id,
+    nome,
+    diaVencimento,
+    valorParcela,
+    categoria,
+    subcategoria,
+  );
+
+  revalidatePath("/financiamentos");
+  revalidatePath("/checklist");
+  revalidatePath("/calendario");
+  revalidatePath("/dashboard");
+}
+
+export async function deleteFinanciamento(id: string) {
+  const { supabase } = await currentAuthor();
+  // apaga o financiamento: o item de checklist some junto (cascade em
+  // origem_financiamento_id); as parcelas já pagas continuam no Histórico.
+  const { error } = await supabase.from("financiamentos").delete().eq("id", id);
+  if (error) throw new Error(error.message);
+
+  revalidatePath("/financiamentos");
   revalidatePath("/checklist");
   revalidatePath("/calendario");
   revalidatePath("/dashboard");
@@ -435,7 +590,7 @@ export async function confirmarChecklistItem(itemId: string, mes: string, valor:
 
   const { data: item, error: itemError } = await supabase
     .from("checklist_items")
-    .select("tipo, categoria, subcategoria, origem_profile_id")
+    .select("tipo, categoria, subcategoria, origem_profile_id, origem_financiamento_id")
     .eq("id", itemId)
     .single();
   if (itemError) throw new Error(itemError.message);
@@ -483,10 +638,37 @@ export async function confirmarChecklistItem(itemId: string, mes: string, valor:
   );
   if (statusError) throw new Error(statusError.message);
 
+  // se essa era a última parcela do financiamento, desativa o item pra ele
+  // parar de aparecer em meses futuros
+  if (item.origem_financiamento_id) {
+    const { data: financiamento, error: financiamentoError } = await supabase
+      .from("financiamentos")
+      .select("numero_parcelas")
+      .eq("id", item.origem_financiamento_id)
+      .single();
+    if (financiamentoError) throw new Error(financiamentoError.message);
+
+    const { data: statusConcluido, error: statusConcluidoError } = await supabase
+      .from("checklist_status")
+      .select("*")
+      .eq("item_id", itemId)
+      .eq("concluido", true);
+    if (statusConcluidoError) throw new Error(statusConcluidoError.message);
+
+    if (parcelasPagas(statusConcluido, itemId) >= financiamento.numero_parcelas) {
+      const { error: ativoError } = await supabase
+        .from("checklist_items")
+        .update({ ativo: false })
+        .eq("id", itemId);
+      if (ativoError) throw new Error(ativoError.message);
+    }
+  }
+
   revalidatePath("/checklist");
   revalidatePath("/dashboard");
   revalidatePath("/historico");
   revalidatePath("/calendario");
+  revalidatePath("/financiamentos");
 }
 
 export async function desconfirmarChecklistItem(itemId: string, mes: string) {

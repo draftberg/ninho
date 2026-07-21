@@ -154,6 +154,7 @@ ${trimmed}
         autor: "",
         goal_id: null,
         cartao_id: null,
+        dividido: false,
       };
     })
     .filter((t) => t.valor > 0);

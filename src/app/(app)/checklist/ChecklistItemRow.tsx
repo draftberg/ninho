@@ -142,7 +142,7 @@ export function ChecklistItemRow({
       {valorExibido != null && (
         <span className={isReceber ? "mono entrada" : "mono"}>{formatBRL(valorExibido)}</span>
       )}
-      {!item.origem_profile_id && !item.origem_cartao_id && (
+      {!item.origem_profile_id && !item.origem_cartao_id && !item.origem_financiamento_id && (
         <button
           type="button"
           className="delete-button"
