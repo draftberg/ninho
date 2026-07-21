@@ -1,9 +1,10 @@
 "use client";
 
 import { useEffect, useRef, useState, useTransition } from "react";
-import { listarConversas, carregarMensagens, deletarConversa } from "@/lib/chat";
-import { formatDate } from "@/lib/format";
-import type { ChatConversa } from "@/lib/types";
+import { listarConversas, carregarMensagens, deletarConversa, confirmarLancamentoChat } from "@/lib/chat";
+import { LANCAMENTO_SENTINEL, type LancamentoProposto } from "@/lib/chat-shared";
+import { formatBRL, formatDate } from "@/lib/format";
+import { categoriaLabel, subcategoriaLabel, TIPO_LABELS, type ChatConversa } from "@/lib/types";
 import {
   ChatCircleDotsIcon,
   XIcon,
@@ -12,12 +13,15 @@ import {
   PlusIcon,
   TrashIcon,
   SparkleIcon,
+  CheckIcon,
 } from "@phosphor-icons/react";
 
 interface DisplayMessage {
   role: "user" | "assistant";
   content: string;
   local?: boolean;
+  proposta?: LancamentoProposto;
+  propostaStatus?: "pendente" | "confirmando" | "confirmado" | "cancelado";
 }
 
 function saudacaoProativa(alerts: string[]): string {
@@ -134,23 +138,81 @@ export function ChatWidget({ alerts }: { alerts: string[] }) {
 
         const reader = response.body.getReader();
         const decoder = new TextDecoder();
+        let bruto = "";
         for (;;) {
           const { done, value } = await reader.read();
           if (done) break;
           const chunk = decoder.decode(value, { stream: true });
           if (!chunk) continue;
+          bruto += chunk;
+          const indiceSentinel = bruto.indexOf(LANCAMENTO_SENTINEL);
+          const textoVisivel = indiceSentinel >= 0 ? bruto.slice(0, indiceSentinel) : bruto;
           setMensagens((prev) => {
             const proximo = [...prev];
             const ultimo = proximo[proximo.length - 1];
-            proximo[proximo.length - 1] = { ...ultimo, content: ultimo.content + chunk };
+            proximo[proximo.length - 1] = { ...ultimo, content: textoVisivel };
             return proximo;
           });
+        }
+
+        const indiceSentinel = bruto.indexOf(LANCAMENTO_SENTINEL);
+        if (indiceSentinel >= 0) {
+          try {
+            const proposta = JSON.parse(
+              bruto.slice(indiceSentinel + LANCAMENTO_SENTINEL.length),
+            ) as LancamentoProposto;
+            setMensagens((prev) => {
+              const proximo = [...prev];
+              const ultimo = proximo[proximo.length - 1];
+              proximo[proximo.length - 1] = { ...ultimo, proposta, propostaStatus: "pendente" };
+              return proximo;
+            });
+          } catch (err) {
+            console.error("[chat] falha ao interpretar proposta de lançamento:", err);
+          }
         }
       } catch (err) {
         console.error("[chat] falha ao enviar mensagem:", err);
         setMensagens((prev) => prev.slice(0, -1));
         setError("Não foi possível enviar a mensagem agora. Tente novamente em instantes.");
       }
+    });
+  }
+
+  function handleConfirmarProposta(index: number) {
+    const proposta = mensagens[index]?.proposta;
+    if (!proposta) return;
+    setMensagens((prev) => {
+      const proximo = [...prev];
+      proximo[index] = { ...proximo[index], propostaStatus: "confirmando" };
+      return proximo;
+    });
+    startTransition(async () => {
+      try {
+        const result = await confirmarLancamentoChat(proposta);
+        setMensagens((prev) => {
+          const proximo = [...prev];
+          proximo[index] = { ...proximo[index], propostaStatus: result.error ? "pendente" : "confirmado" };
+          return proximo;
+        });
+        if (result.error) setError(result.error);
+      } catch (err) {
+        console.error("[chat] falha ao confirmar lançamento:", err);
+        setMensagens((prev) => {
+          const proximo = [...prev];
+          proximo[index] = { ...proximo[index], propostaStatus: "pendente" };
+          return proximo;
+        });
+        setError("Não foi possível salvar o lançamento agora. Tente novamente.");
+      }
+    });
+  }
+
+  function handleCancelarProposta(index: number) {
+    setMensagens((prev) => {
+      const proximo = [...prev];
+      proximo[index] = { ...proximo[index], propostaStatus: "cancelado" };
+      return proximo;
     });
   }
 
@@ -243,7 +305,11 @@ export function ChatWidget({ alerts }: { alerts: string[] }) {
               <div className="chat-messages" ref={scrollRef}>
                 {mensagens.map((m, i) => {
                   const isPlaceholderVazio =
-                    isPending && i === mensagens.length - 1 && m.role === "assistant" && !m.content;
+                    isPending &&
+                    i === mensagens.length - 1 &&
+                    m.role === "assistant" &&
+                    !m.content &&
+                    !m.proposta;
                   return (
                     <div
                       key={i}
@@ -256,7 +322,53 @@ export function ChatWidget({ alerts }: { alerts: string[] }) {
                           <span />
                         </span>
                       ) : (
-                        m.content
+                        <>
+                          {m.content}
+                          {m.proposta && (
+                            <div className="chat-proposta-card">
+                              <div className="chat-proposta-header">
+                                <span className={`chat-proposta-tipo ${m.proposta.tipo}`}>
+                                  {TIPO_LABELS[m.proposta.tipo]}
+                                </span>
+                                <span className="chat-proposta-valor">{formatBRL(m.proposta.valor)}</span>
+                              </div>
+                              <div className="chat-proposta-detalhe">
+                                {categoriaLabel(m.proposta.tipo, m.proposta.categoria)} ·{" "}
+                                {subcategoriaLabel(m.proposta.tipo, m.proposta.categoria, m.proposta.subcategoria)}
+                              </div>
+                              <div className="chat-proposta-detalhe">
+                                {formatDate(m.proposta.date)}
+                                {m.proposta.descricao ? ` · ${m.proposta.descricao}` : ""}
+                              </div>
+                              {(m.propostaStatus === "pendente" || m.propostaStatus === "confirmando") && (
+                                <div className="chat-proposta-actions">
+                                  <button
+                                    type="button"
+                                    className="chat-proposta-confirm"
+                                    disabled={m.propostaStatus === "confirmando"}
+                                    onClick={() => handleConfirmarProposta(i)}
+                                  >
+                                    <CheckIcon size={14} weight="bold" /> Confirmar
+                                  </button>
+                                  <button
+                                    type="button"
+                                    className="chat-proposta-cancel"
+                                    disabled={m.propostaStatus === "confirmando"}
+                                    onClick={() => handleCancelarProposta(i)}
+                                  >
+                                    Cancelar
+                                  </button>
+                                </div>
+                              )}
+                              {m.propostaStatus === "confirmado" && (
+                                <p className="chat-proposta-status ok">Lançamento salvo.</p>
+                              )}
+                              {m.propostaStatus === "cancelado" && (
+                                <p className="chat-proposta-status">Descartado.</p>
+                              )}
+                            </div>
+                          )}
+                        </>
                       )}
                     </div>
                   );

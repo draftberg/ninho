@@ -1,8 +1,11 @@
-import { GoogleGenAI } from "@google/genai";
+import { GoogleGenAI, Type } from "@google/genai";
 import { createClient } from "@/lib/supabase/server";
 import { personNameFor } from "@/lib/allowlist";
 import { buildFinanceContext } from "@/lib/chat-context";
 import { fetchChatMensagens } from "@/lib/data";
+import { CATEGORIAS, categoriasDoTipo, subcategoriasDaCategoria } from "@/lib/types";
+import { todayISO } from "@/lib/format";
+import { LANCAMENTO_SENTINEL } from "@/lib/chat-shared";
 
 // Runtime Edge: nas Vercel Functions em Node.js o corpo da resposta pode
 // ficar retido em buffer e chegar ao cliente em poucos blocos grandes em vez
@@ -17,6 +20,69 @@ function temaHeuristico(texto: string): string {
   if (!palavras) return "Nova conversa";
   return palavras.length > 60 ? `${palavras.slice(0, 57)}...` : palavras;
 }
+
+const TIPOS_LANCAMENTO = ["entrada", "saida"] as const;
+type TipoLancamento = (typeof TIPOS_LANCAMENTO)[number];
+
+function arvoreCategoriasLancamento(): string {
+  return TIPOS_LANCAMENTO.map((tipo) => {
+    const categorias = CATEGORIAS[tipo]
+      .map((c) => `    - "${c.value}" (${c.label}): ${c.subcategorias.map((s) => `"${s.value}"`).join(", ")}`)
+      .join("\n");
+    return `  ${tipo}:\n${categorias}`;
+  }).join("\n");
+}
+
+function categoriaValidaLancamento(tipo: TipoLancamento, categoria: string): string {
+  const categorias = categoriasDoTipo(tipo);
+  return categorias.some((c) => c.value === categoria)
+    ? categoria
+    : categorias[categorias.length - 1].value;
+}
+
+function subcategoriaValidaLancamento(
+  tipo: TipoLancamento,
+  categoria: string,
+  subcategoria: string,
+): string {
+  const subcategorias = subcategoriasDaCategoria(tipo, categoria);
+  return subcategorias.some((s) => s.value === subcategoria) ? subcategoria : subcategorias[0].value;
+}
+
+const PROPOR_LANCAMENTO_TOOL = {
+  functionDeclarations: [
+    {
+      name: "propor_lancamento",
+      description:
+        'Registra uma PROPOSTA de lançamento financeiro (entrada ou saída) para o usuário revisar e confirmar. Só chame esta função quando o usuário pedir explicitamente para anotar/registrar/lançar um gasto ou recebimento (ex: "gastei 50 no mercado", "recebi 200 de freelance ontem"). Nunca chame para perguntas, pedidos de conselho ou dúvidas sobre o app.',
+      parameters: {
+        type: Type.OBJECT,
+        properties: {
+          tipo: {
+            type: Type.STRING,
+            enum: [...TIPOS_LANCAMENTO],
+            description: "Se é dinheiro que entrou (entrada) ou saiu (saida)",
+          },
+          categoria: {
+            type: Type.STRING,
+            description: "Uma categoria válida para o tipo escolhido, na árvore fornecida",
+          },
+          subcategoria: {
+            type: Type.STRING,
+            description: "Uma subcategoria válida para a categoria escolhida, na árvore fornecida",
+          },
+          valor: { type: Type.NUMBER, description: "Valor em reais, sempre positivo" },
+          descricao: { type: Type.STRING, description: "Descrição curta do lançamento" },
+          date: {
+            type: Type.STRING,
+            description: "Data no formato YYYY-MM-DD; use a data de hoje se o usuário não especificar",
+          },
+        },
+        required: ["tipo", "categoria", "subcategoria", "valor"],
+      },
+    },
+  ],
+};
 
 // Endpoint dedicado (em vez de Server Action) porque Server Actions não
 // suportam resposta em streaming — aqui a resposta da IA vai sendo
@@ -86,6 +152,11 @@ Seu papel:
 1. Explicar como qualquer parte do app funciona quando perguntarem — o app tem: Painel (visão geral, gráficos, saldo futuro projetado), Lançar (registrar entradas/saídas/investimentos, com opção de marcar como recorrente e vincular a um cartão), Histórico (lista de lançamentos), Reserva (metas de investimento tipo reserva do bebê), Cartões (fatura por fechamento/vencimento), Checklist (contas fixas e entradas recorrentes a confirmar mês a mês), Orçamento (metas de gasto por categoria e pessoa, com sugestão de IA), Calendário (visão mensal de vencimentos) e Importar extrato (lê um PDF/CSV e categoriza automaticamente).
 2. Dar conselhos financeiros práticos e ações preditivas baseadas SOMENTE nos dados reais fornecidos abaixo — nunca invente números.
 3. Ser direto, acolhedor, sem jargão financeiro complicado. Respostas curtas (2 a 4 frases), a menos que peçam mais detalhe. Responda em texto corrido, sem markdown.
+4. Quando o usuário pedir pra anotar/registrar/lançar um gasto ou recebimento (entrada ou saída), chame a função propor_lancamento com os dados extraídos — nunca invente que já lançou algo em texto, sempre use a função. Classifique usando exatamente esta árvore de tipo → categoria → subcategoria (use sempre os valores entre aspas, nunca o rótulo em português):
+
+${arvoreCategoriasLancamento()}
+
+Se o usuário não disser a data, use ${todayISO()} (hoje). Só funciona para entrada/saída simples — não ofereça isso para investimentos, metas, cartão ou recorrência ainda.
 
 ${contexto}`;
 
@@ -103,21 +174,52 @@ ${contexto}`;
     const streamResult = await ai.models.generateContentStream({
       model,
       contents,
-      config: { systemInstruction },
+      config: { systemInstruction, tools: [PROPOR_LANCAMENTO_TOOL] },
     });
 
     const encoder = new TextEncoder();
     const finalConversaId = conversaId;
     let fullText = "";
+    let propostaArgs: Record<string, unknown> | null = null;
+    let propostaEnviada = false;
 
     const stream = new ReadableStream({
       async start(controller) {
         try {
           for await (const chunk of streamResult) {
+            const calls = chunk.functionCalls;
+            const call = calls?.find((c) => c.name === "propor_lancamento");
+            if (call?.args) propostaArgs = call.args;
+
             const text = chunk.text ?? "";
             if (text) {
               fullText += text;
               controller.enqueue(encoder.encode(text));
+            }
+          }
+
+          if (propostaArgs) {
+            const tipo: TipoLancamento = propostaArgs.tipo === "entrada" ? "entrada" : "saida";
+            const categoria = categoriaValidaLancamento(tipo, String(propostaArgs.categoria ?? ""));
+            const subcategoria = subcategoriaValidaLancamento(
+              tipo,
+              categoria,
+              String(propostaArgs.subcategoria ?? ""),
+            );
+            const valor = Math.abs(Number(propostaArgs.valor) || 0);
+            const date =
+              typeof propostaArgs.date === "string" && /^\d{4}-\d{2}-\d{2}$/.test(propostaArgs.date)
+                ? propostaArgs.date
+                : todayISO();
+            const descricao =
+              typeof propostaArgs.descricao === "string" && propostaArgs.descricao.trim()
+                ? propostaArgs.descricao.trim()
+                : null;
+
+            if (valor > 0) {
+              const proposta = { tipo, categoria, subcategoria, valor, descricao, date };
+              controller.enqueue(encoder.encode(LANCAMENTO_SENTINEL + JSON.stringify(proposta)));
+              propostaEnviada = true;
             }
           }
         } catch (err) {
@@ -129,7 +231,8 @@ ${contexto}`;
           const { error: userMsgError } = await userMsgPromise;
           if (userMsgError) console.error("[chat] falha ao salvar mensagem do usuário:", userMsgError);
 
-          const respostaFinal = fullText || FALLBACK;
+          const respostaFinal =
+            fullText || (propostaEnviada ? "Deixei uma proposta de lançamento pra você confirmar." : FALLBACK);
           const { error: assistantMsgError } = await supabase
             .from("chat_mensagens")
             .insert({ conversa_id: finalConversaId, role: "assistant", content: respostaFinal });

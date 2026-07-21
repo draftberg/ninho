@@ -2307,6 +2307,98 @@ a {
   }
 }
 
+.chat-proposta-card {
+  margin-top: 0.6rem;
+  padding: 0.75rem;
+  border-radius: 0.85rem;
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.chat-proposta-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.chat-proposta-tipo {
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 0.15rem 0.55rem;
+  border-radius: 999px;
+}
+
+.chat-proposta-tipo.entrada {
+  background: var(--color-pastel-entrada);
+  color: var(--color-pastel-entrada-ink);
+}
+
+.chat-proposta-tipo.saida {
+  background: var(--color-pastel-saida);
+  color: var(--color-pastel-saida-ink);
+}
+
+.chat-proposta-valor {
+  font-weight: 700;
+}
+
+.chat-proposta-detalhe {
+  font-size: 0.85rem;
+  color: var(--color-ink-muted);
+}
+
+.chat-proposta-actions {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.3rem;
+}
+
+.chat-proposta-confirm,
+.chat-proposta-cancel {
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.3rem;
+  padding: 0.45rem 0.6rem;
+  border-radius: 0.7rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  border: 1px solid var(--color-border);
+  cursor: pointer;
+}
+
+.chat-proposta-confirm {
+  background: var(--color-primary);
+  color: #fff;
+  border-color: var(--color-primary);
+}
+
+.chat-proposta-confirm:disabled,
+.chat-proposta-cancel:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.chat-proposta-cancel {
+  background: transparent;
+  color: var(--color-ink-muted);
+}
+
+.chat-proposta-status {
+  font-size: 0.85rem;
+  font-weight: 600;
+  margin-top: 0.2rem;
+}
+
+.chat-proposta-status.ok {
+  color: var(--color-pastel-entrada-ink);
+}
+
 .chat-input-row {
   display: flex;
   gap: 0.5rem;
