@@ -1,4 +1,5 @@
 import { GoogleGenAI, Type } from "@google/genai";
+import { after } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { personNameFor } from "@/lib/allowlist";
 import { buildFinanceContext } from "@/lib/chat-context";
@@ -152,7 +153,7 @@ Seu papel:
 1. Explicar como qualquer parte do app funciona quando perguntarem — o app tem: Painel (visão geral, gráficos, saldo futuro projetado), Lançar (registrar entradas/saídas/investimentos, com opção de marcar como recorrente e vincular a um cartão), Histórico (lista de lançamentos), Reserva (metas de investimento tipo reserva do bebê), Cartões (fatura por fechamento/vencimento), Checklist (contas fixas e entradas recorrentes a confirmar mês a mês), Orçamento (metas de gasto por categoria e pessoa, com sugestão de IA), Calendário (visão mensal de vencimentos) e Importar extrato (lê um PDF/CSV e categoriza automaticamente).
 2. Dar conselhos financeiros práticos e ações preditivas baseadas SOMENTE nos dados reais fornecidos abaixo — nunca invente números.
 3. Ser direto, acolhedor, sem jargão financeiro complicado. Respostas curtas (2 a 4 frases), a menos que peçam mais detalhe. Responda em texto corrido, sem markdown.
-4. Quando o usuário pedir pra anotar/registrar/lançar um gasto ou recebimento (entrada ou saída), chame a função propor_lancamento com os dados extraídos — nunca invente que já lançou algo em texto, sempre use a função. Classifique usando exatamente esta árvore de tipo → categoria → subcategoria (use sempre os valores entre aspas, nunca o rótulo em português):
+4. Quando o usuário pedir pra anotar/registrar/lançar um gasto ou recebimento (entrada ou saída), chame a função propor_lancamento com os dados extraídos — nunca invente que já lançou algo em texto, sempre use a função. Isso vale também quando VOCÊ mesmo sugeriu lançar algo numa mensagem anterior (ex: "posso deixar esse gasto pré-lançado, é só avisar") e o usuário confirma depois, mesmo que a confirmação seja curta (ex: "por favor", "sim", "pode lançar") — use os dados da sua própria sugestão anterior nesse caso. Classifique usando exatamente esta árvore de tipo → categoria → subcategoria (use sempre os valores entre aspas, nunca o rótulo em português):
 
 ${arvoreCategoriasLancamento()}
 
@@ -179,12 +180,20 @@ ${contexto}`;
 
     const encoder = new TextEncoder();
     const finalConversaId = conversaId;
-    let fullText = "";
-    let propostaArgs: Record<string, unknown> | null = null;
-    let propostaEnviada = false;
+
+    // Resolvida quando o streaming termina, com o que precisa ser
+    // persistido — o `after()` abaixo espera por ela antes de gravar nada.
+    let resolveStreamDone: (result: { fullText: string; propostaEnviada: boolean }) => void;
+    const streamDone = new Promise<{ fullText: string; propostaEnviada: boolean }>((resolve) => {
+      resolveStreamDone = resolve;
+    });
 
     const stream = new ReadableStream({
       async start(controller) {
+        let fullText = "";
+        let propostaArgs: Record<string, unknown> | null = null;
+        let propostaEnviada = false;
+
         try {
           for await (const chunk of streamResult) {
             const calls = chunk.functionCalls;
@@ -227,24 +236,36 @@ ${contexto}`;
           if (!fullText) controller.enqueue(encoder.encode(FALLBACK));
         } finally {
           controller.close();
-
-          const { error: userMsgError } = await userMsgPromise;
-          if (userMsgError) console.error("[chat] falha ao salvar mensagem do usuário:", userMsgError);
-
-          const respostaFinal =
-            fullText || (propostaEnviada ? "Deixei uma proposta de lançamento pra você confirmar." : FALLBACK);
-          const { error: assistantMsgError } = await supabase
-            .from("chat_mensagens")
-            .insert({ conversa_id: finalConversaId, role: "assistant", content: respostaFinal });
-          if (assistantMsgError) console.error("[chat] falha ao salvar resposta:", assistantMsgError);
-
-          const { error: updateError } = await supabase
-            .from("chat_conversas")
-            .update({ updated_at: new Date().toISOString() })
-            .eq("id", finalConversaId);
-          if (updateError) console.error("[chat] falha ao atualizar conversa:", updateError);
+          resolveStreamDone({ fullText, propostaEnviada });
         }
       },
+    });
+
+    // Grava a mensagem do usuário e a resposta do assistente DEPOIS que a
+    // resposta HTTP já foi enviada — usar `after()` (em vez de só aguardar
+    // dentro do ReadableStream) garante que a função continue rodando até
+    // essas escritas terminarem, mesmo que a plataforma considere a conexão
+    // com o cliente encerrada assim que o streaming acaba. Sem isso, a
+    // gravação podia ser cortada no meio e a próxima mensagem do usuário
+    // chegava sem o histórico da conversa.
+    after(async () => {
+      const { fullText, propostaEnviada } = await streamDone;
+
+      const { error: userMsgError } = await userMsgPromise;
+      if (userMsgError) console.error("[chat] falha ao salvar mensagem do usuário:", userMsgError);
+
+      const respostaFinal =
+        fullText || (propostaEnviada ? "Deixei uma proposta de lançamento pra você confirmar." : FALLBACK);
+      const { error: assistantMsgError } = await supabase
+        .from("chat_mensagens")
+        .insert({ conversa_id: finalConversaId, role: "assistant", content: respostaFinal });
+      if (assistantMsgError) console.error("[chat] falha ao salvar resposta:", assistantMsgError);
+
+      const { error: updateError } = await supabase
+        .from("chat_conversas")
+        .update({ updated_at: new Date().toISOString() })
+        .eq("id", finalConversaId);
+      if (updateError) console.error("[chat] falha ao atualizar conversa:", updateError);
     });
 
     return new Response(stream, {
