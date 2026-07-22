@@ -274,6 +274,7 @@ export interface Cartao {
   limite: number | null;
   dia_fechamento: number;
   dia_vencimento: number;
+  pessoa: string | null;
   created_at: string;
 }
 
@@ -294,6 +295,7 @@ export interface Financiamento {
   dia_vencimento: number;
   categoria: string;
   subcategoria: string;
+  pessoa: string | null;
   created_at: string;
 }
 
@@ -327,6 +329,7 @@ export interface ChecklistItem {
   origem_financiamento_id: string | null;
   categoria: string | null;
   subcategoria: string | null;
+  pessoa: string | null;
   created_at: string;
 }
 

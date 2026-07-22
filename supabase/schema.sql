@@ -29,6 +29,7 @@ create table if not exists cartoes (
   limite numeric(12, 2) check (limite >= 0),
   dia_fechamento int not null check (dia_fechamento between 1 and 31),
   dia_vencimento int not null check (dia_vencimento between 1 and 31),
+  pessoa text,
   created_at timestamptz not null default now()
 );
 
@@ -45,6 +46,7 @@ create table if not exists financiamentos (
   dia_vencimento int not null check (dia_vencimento between 1 and 31),
   categoria text not null default 'moradia',
   subcategoria text not null default 'aluguel',
+  pessoa text,
   created_at timestamptz not null default now()
 );
 
@@ -118,6 +120,7 @@ create table if not exists checklist_items (
   origem_financiamento_id uuid references financiamentos(id) on delete cascade,
   categoria text,
   subcategoria text,
+  pessoa text,
   created_at timestamptz not null default now(),
   unique (origem_profile_id, origem_parcela),
   unique (origem_cartao_id),

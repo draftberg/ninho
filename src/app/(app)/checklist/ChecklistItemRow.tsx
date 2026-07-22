@@ -6,10 +6,12 @@ import {
   deleteChecklistItem,
   confirmarChecklistItem,
   desconfirmarChecklistItem,
+  updateChecklistItemPessoa,
 } from "@/lib/actions";
 import { formatBRL } from "@/lib/format";
 import { categoriaIcon } from "@/lib/category-icons";
 import { checklistTone } from "@/lib/checklist-status";
+import { PERSON_DISPLAY_NAMES, personColorClass } from "@/lib/allowlist";
 import type { ChecklistItem } from "@/lib/types";
 import { CheckCircleIcon, CircleIcon, TrashIcon, CreditCardIcon } from "@phosphor-icons/react";
 
@@ -41,9 +43,16 @@ export function ChecklistItemRow({
   const [confirming, setConfirming] = useState(false);
   const isReceber = item.tipo === "a_receber";
   const isCartao = Boolean(item.origem_cartao_id);
+  const isManual = !item.origem_profile_id && !item.origem_cartao_id && !item.origem_financiamento_id;
   const podeConfirmar = Boolean(item.categoria && item.subcategoria) && !isCartao;
   const valorExibido = valorCalculado ?? item.valor_esperado;
   const tone = checklistTone(item.dia_vencimento, mes, concluido);
+
+  function handlePessoaChange(pessoa: string) {
+    startTransition(() => {
+      updateChecklistItemPessoa(item.id, pessoa);
+    });
+  }
 
   function handleToggle() {
     startTransition(() => {
@@ -141,6 +150,27 @@ export function ChecklistItemRow({
           </span>
         )}
       </div>
+      {isManual ? (
+        <select
+          className={`checklist-item-pessoa-select ${personColorClass(item.pessoa ?? "")}`}
+          value={item.pessoa ?? ""}
+          onChange={(e) => handlePessoaChange(e.target.value)}
+          disabled={isPending}
+        >
+          <option value="" disabled>
+            Dono?
+          </option>
+          {PERSON_DISPLAY_NAMES.map((p) => (
+            <option key={p} value={p}>
+              {p}
+            </option>
+          ))}
+        </select>
+      ) : (
+        item.pessoa && (
+          <span className={`checklist-item-pessoa ${personColorClass(item.pessoa)}`}>{item.pessoa}</span>
+        )
+      )}
       {valorExibido != null && (
         <span className={isReceber ? "mono entrada" : "mono"}>{formatBRL(valorExibido)}</span>
       )}

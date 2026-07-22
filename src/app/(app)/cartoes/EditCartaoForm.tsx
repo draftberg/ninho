@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { updateCartao } from "@/lib/actions";
 import { BANDEIRAS, type Cartao } from "@/lib/types";
+import { PERSON_DISPLAY_NAMES } from "@/lib/allowlist";
 import { CartaoMockup } from "@/components/CartaoMockup";
 
 export function EditCartaoForm({ cartao }: { cartao: Cartao }) {
@@ -10,6 +11,7 @@ export function EditCartaoForm({ cartao }: { cartao: Cartao }) {
   const [nome, setNome] = useState(cartao.nome);
   const [banco, setBanco] = useState(cartao.banco ?? "");
   const [bandeira, setBandeira] = useState(cartao.bandeira ?? BANDEIRAS[0]);
+  const [pessoa, setPessoa] = useState(cartao.pessoa ?? PERSON_DISPLAY_NAMES[0]);
 
   if (!editing) {
     return (
@@ -50,6 +52,16 @@ export function EditCartaoForm({ cartao }: { cartao: Cartao }) {
           {BANDEIRAS.map((b) => (
             <option key={b} value={b}>
               {b}
+            </option>
+          ))}
+        </select>
+      </label>
+      <label>
+        Dono
+        <select name="pessoa" value={pessoa} onChange={(e) => setPessoa(e.target.value)}>
+          {PERSON_DISPLAY_NAMES.map((p) => (
+            <option key={p} value={p}>
+              {p}
             </option>
           ))}
         </select>

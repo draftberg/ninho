@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { createFinanciamento } from "@/lib/actions";
 import { categoriasDoTipo, subcategoriasDaCategoria } from "@/lib/types";
+import { PERSON_DISPLAY_NAMES } from "@/lib/allowlist";
 import { PlusIcon } from "@phosphor-icons/react";
 
 const CATEGORIAS_SAIDA = categoriasDoTipo("saida");
@@ -11,6 +12,7 @@ const CATEGORIA_PADRAO = CATEGORIAS_SAIDA.find((c) => c.value === "moradia") ?? 
 export function CreateFinanciamentoForm() {
   const [open, setOpen] = useState(false);
   const [categoria, setCategoria] = useState(CATEGORIA_PADRAO.value);
+  const [pessoa, setPessoa] = useState<string>(PERSON_DISPLAY_NAMES[0]);
   const subcategorias = subcategoriasDaCategoria("saida", categoria);
 
   if (!open) {
@@ -29,6 +31,7 @@ export function CreateFinanciamentoForm() {
         await createFinanciamento(formData);
         setOpen(false);
         setCategoria(CATEGORIA_PADRAO.value);
+        setPessoa(PERSON_DISPLAY_NAMES[0]);
       }}
     >
       <label>
@@ -68,6 +71,16 @@ export function CreateFinanciamentoForm() {
           {subcategorias.map((s) => (
             <option key={s.value} value={s.value}>
               {s.label}
+            </option>
+          ))}
+        </select>
+      </label>
+      <label>
+        Dono
+        <select name="pessoa" value={pessoa} onChange={(e) => setPessoa(e.target.value)}>
+          {PERSON_DISPLAY_NAMES.map((p) => (
+            <option key={p} value={p}>
+              {p}
             </option>
           ))}
         </select>

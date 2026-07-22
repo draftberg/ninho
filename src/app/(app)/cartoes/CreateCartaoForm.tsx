@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { createCartao } from "@/lib/actions";
 import { BANDEIRAS } from "@/lib/types";
+import { PERSON_DISPLAY_NAMES } from "@/lib/allowlist";
 import { CartaoMockup } from "@/components/CartaoMockup";
 import { PlusIcon } from "@phosphor-icons/react";
 
@@ -11,6 +12,7 @@ export function CreateCartaoForm() {
   const [nome, setNome] = useState("");
   const [banco, setBanco] = useState("");
   const [bandeira, setBandeira] = useState<string>(BANDEIRAS[0]);
+  const [pessoa, setPessoa] = useState<string>(PERSON_DISPLAY_NAMES[0]);
 
   if (!open) {
     return (
@@ -30,6 +32,7 @@ export function CreateCartaoForm() {
         setNome("");
         setBanco("");
         setBandeira(BANDEIRAS[0]);
+        setPessoa(PERSON_DISPLAY_NAMES[0]);
       }}
     >
       <CartaoMockup nome={nome} banco={banco} bandeira={bandeira} />
@@ -61,6 +64,16 @@ export function CreateCartaoForm() {
           {BANDEIRAS.map((b) => (
             <option key={b} value={b}>
               {b}
+            </option>
+          ))}
+        </select>
+      </label>
+      <label>
+        Dono
+        <select name="pessoa" value={pessoa} onChange={(e) => setPessoa(e.target.value)}>
+          {PERSON_DISPLAY_NAMES.map((p) => (
+            <option key={p} value={p}>
+              {p}
             </option>
           ))}
         </select>

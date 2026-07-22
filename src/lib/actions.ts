@@ -235,6 +235,7 @@ async function syncCartaoChecklistItem(
   cartaoId: string,
   nome: string,
   diaVencimento: number,
+  pessoa: string | null,
 ) {
   const { error } = await supabase.from("checklist_items").upsert(
     {
@@ -243,6 +244,7 @@ async function syncCartaoChecklistItem(
       dia_vencimento: diaVencimento,
       tipo: "a_pagar",
       origem_cartao_id: cartaoId,
+      pessoa,
     },
     { onConflict: "origem_cartao_id" },
   );
@@ -257,6 +259,7 @@ export async function createCartao(formData: FormData) {
   const limiteRaw = formData.get("limite") as string;
   const diaFechamento = Number(formData.get("dia_fechamento"));
   const diaVencimento = Number(formData.get("dia_vencimento"));
+  const pessoa = (formData.get("pessoa") as string) || null;
 
   const cartao: NewCartao = {
     nome,
@@ -265,12 +268,13 @@ export async function createCartao(formData: FormData) {
     limite: limiteRaw ? Number(limiteRaw) : null,
     dia_fechamento: diaFechamento,
     dia_vencimento: diaVencimento,
+    pessoa,
   };
 
   const { data, error } = await supabase.from("cartoes").insert(cartao).select().single();
   if (error) throw new Error(error.message);
 
-  await syncCartaoChecklistItem(supabase, data.id, nome, diaVencimento);
+  await syncCartaoChecklistItem(supabase, data.id, nome, diaVencimento, pessoa);
 
   revalidatePath("/cartoes");
   revalidatePath("/lancar");
@@ -288,6 +292,7 @@ export async function updateCartao(formData: FormData) {
   const limiteRaw = formData.get("limite") as string;
   const diaFechamento = Number(formData.get("dia_fechamento"));
   const diaVencimento = Number(formData.get("dia_vencimento"));
+  const pessoa = (formData.get("pessoa") as string) || null;
 
   const { error } = await supabase
     .from("cartoes")
@@ -298,11 +303,12 @@ export async function updateCartao(formData: FormData) {
       limite: limiteRaw ? Number(limiteRaw) : null,
       dia_fechamento: diaFechamento,
       dia_vencimento: diaVencimento,
+      pessoa,
     })
     .eq("id", id);
   if (error) throw new Error(error.message);
 
-  await syncCartaoChecklistItem(supabase, id, nome, diaVencimento);
+  await syncCartaoChecklistItem(supabase, id, nome, diaVencimento, pessoa);
 
   revalidatePath("/cartoes");
   revalidatePath("/checklist");
@@ -339,6 +345,7 @@ async function syncFinanciamentoChecklistItem(
   valorParcela: number,
   categoria: string,
   subcategoria: string,
+  pessoa: string | null,
 ) {
   const { error } = await supabase.from("checklist_items").upsert(
     {
@@ -349,6 +356,7 @@ async function syncFinanciamentoChecklistItem(
       origem_financiamento_id: financiamentoId,
       categoria,
       subcategoria,
+      pessoa,
     },
     { onConflict: "origem_financiamento_id" },
   );
@@ -363,6 +371,7 @@ export async function createFinanciamento(formData: FormData) {
   const diaVencimento = Number(formData.get("dia_vencimento"));
   const categoria = formData.get("categoria") as string;
   const subcategoria = formData.get("subcategoria") as string;
+  const pessoa = (formData.get("pessoa") as string) || null;
 
   const financiamento: NewFinanciamento = {
     nome,
@@ -371,6 +380,7 @@ export async function createFinanciamento(formData: FormData) {
     dia_vencimento: diaVencimento,
     categoria,
     subcategoria,
+    pessoa,
   };
 
   const { data, error } = await supabase
@@ -388,6 +398,7 @@ export async function createFinanciamento(formData: FormData) {
     valorParcela,
     categoria,
     subcategoria,
+    pessoa,
   );
 
   revalidatePath("/financiamentos");
@@ -405,6 +416,7 @@ export async function updateFinanciamento(formData: FormData) {
   const diaVencimento = Number(formData.get("dia_vencimento"));
   const categoria = formData.get("categoria") as string;
   const subcategoria = formData.get("subcategoria") as string;
+  const pessoa = (formData.get("pessoa") as string) || null;
 
   const { error } = await supabase
     .from("financiamentos")
@@ -415,6 +427,7 @@ export async function updateFinanciamento(formData: FormData) {
       dia_vencimento: diaVencimento,
       categoria,
       subcategoria,
+      pessoa,
     })
     .eq("id", id);
   if (error) throw new Error(error.message);
@@ -427,6 +440,7 @@ export async function updateFinanciamento(formData: FormData) {
     valorParcela,
     categoria,
     subcategoria,
+    pessoa,
   );
 
   revalidatePath("/financiamentos");
@@ -456,6 +470,7 @@ export async function createChecklistItem(formData: FormData) {
   const diaVencimentoRaw = formData.get("dia_vencimento") as string;
   const categoria = (formData.get("categoria") as string) || null;
   const subcategoria = (formData.get("subcategoria") as string) || null;
+  const pessoa = (formData.get("pessoa") as string) || null;
 
   const { error } = await supabase.from("checklist_items").insert({
     nome,
@@ -463,10 +478,24 @@ export async function createChecklistItem(formData: FormData) {
     dia_vencimento: diaVencimentoRaw ? Number(diaVencimentoRaw) : null,
     categoria,
     subcategoria,
+    pessoa,
   });
   if (error) throw new Error(error.message);
 
   revalidatePath("/checklist");
+  revalidatePath("/dashboard");
+}
+
+// Atribui/corrige o dono de um item de checklist criado manualmente,
+// direto da lista (sem precisar de uma tela de edição completa) — usado
+// principalmente pra dar dono a contas cadastradas antes dessa coluna existir.
+export async function updateChecklistItemPessoa(itemId: string, pessoa: string) {
+  const { supabase } = await currentAuthor();
+  const { error } = await supabase.from("checklist_items").update({ pessoa }).eq("id", itemId);
+  if (error) throw new Error(error.message);
+
+  revalidatePath("/checklist");
+  revalidatePath("/dashboard");
 }
 
 export async function deleteChecklistItem(id: string) {
@@ -600,6 +629,7 @@ async function syncSalarioChecklistItems(
           subcategoria: "salario",
           origem_profile_id: profileId,
           origem_parcela: parcela,
+          pessoa: autor,
         },
         { onConflict: "origem_profile_id,origem_parcela" },
       );
@@ -626,7 +656,7 @@ export async function confirmarChecklistItem(itemId: string, mes: string, valor:
 
   const { data: item, error: itemError } = await supabase
     .from("checklist_items")
-    .select("tipo, categoria, subcategoria, origem_profile_id, origem_financiamento_id")
+    .select("tipo, categoria, subcategoria, origem_profile_id, origem_financiamento_id, pessoa")
     .eq("id", itemId)
     .single();
   if (itemError) throw new Error(itemError.message);
@@ -634,7 +664,10 @@ export async function confirmarChecklistItem(itemId: string, mes: string, valor:
     throw new Error("Este item não tem categoria definida — edite o cadastro antes de confirmar.");
   }
 
-  let entryAutor = autor;
+  // O lançamento real vai pro dono da conta (quem paga/recebe), não pra quem
+  // clicou em confirmar — evita atribuir a fatura/parcela da outra pessoa
+  // a quem só está registrando o pagamento.
+  let entryAutor = item.pessoa ?? autor;
   if (item.origem_profile_id) {
     const { data: profile, error: profileError } = await supabase
       .from("profiles")

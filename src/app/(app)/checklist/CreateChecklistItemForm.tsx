@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { createChecklistItem } from "@/lib/actions";
 import { categoriasDoTipo, subcategoriasDaCategoria } from "@/lib/types";
+import { PERSON_DISPLAY_NAMES } from "@/lib/allowlist";
 import { PlusIcon } from "@phosphor-icons/react";
 
 const CATEGORIAS_SAIDA = categoriasDoTipo("saida");
@@ -10,6 +11,7 @@ const CATEGORIAS_SAIDA = categoriasDoTipo("saida");
 export function CreateChecklistItemForm() {
   const [open, setOpen] = useState(false);
   const [categoria, setCategoria] = useState(CATEGORIAS_SAIDA[0].value);
+  const [pessoa, setPessoa] = useState<string>(PERSON_DISPLAY_NAMES[0]);
   const subcategorias = subcategoriasDaCategoria("saida", categoria);
 
   if (!open) {
@@ -34,6 +36,7 @@ export function CreateChecklistItemForm() {
         await createChecklistItem(formData);
         setOpen(false);
         setCategoria(CATEGORIAS_SAIDA[0].value);
+        setPessoa(PERSON_DISPLAY_NAMES[0]);
       }}
     >
       <label>
@@ -72,6 +75,16 @@ export function CreateChecklistItemForm() {
       <label>
         Dia de vencimento (opcional)
         <input type="number" name="dia_vencimento" min="1" max="31" placeholder="Ex: 10" />
+      </label>
+      <label>
+        Dono
+        <select name="pessoa" value={pessoa} onChange={(e) => setPessoa(e.target.value)}>
+          {PERSON_DISPLAY_NAMES.map((p) => (
+            <option key={p} value={p}>
+              {p}
+            </option>
+          ))}
+        </select>
       </label>
       <div className="goal-card-new-actions">
         <button type="button" className="secondary-button" onClick={() => setOpen(false)}>
