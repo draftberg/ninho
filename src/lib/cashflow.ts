@@ -1,6 +1,7 @@
 import { filterByMonth, sumByTipo, composicaoPorCategoria } from "@/lib/aggregate";
 import { categoriaLabel, salarioTotal, type ChecklistItem, type Entry, type Profile } from "@/lib/types";
 import { monthLabel, todayISO } from "@/lib/format";
+import { personNameFor } from "@/lib/allowlist";
 
 export interface MonthColumn {
   key: string;
@@ -99,16 +100,25 @@ export function buildCashFlow(
 // atual (mês atual + os próximos `monthsAhead` meses), em vez de um
 // ano-calendário fixo — usado no Painel pra sempre mostrar a previsão dos
 // próximos 12 meses, independente do filtro de ano selecionado.
+//
+// `pessoa`, quando informado, restringe a visão aos lançamentos reais dessa
+// pessoa e ao salário previsto só dela — mas os itens do checklist (contas
+// compartilhadas, cartão, financiamento) continuam entrando por inteiro na
+// projeção de meses futuros, já que não têm dono: representam o que ainda
+// precisa ser pago, dividido ou não.
 export function buildRollingCashFlow(
   allEntries: Entry[],
   checklistItems: ChecklistItem[],
   profiles: Profile[],
   monthsAhead = 12,
+  pessoa?: string | null,
 ): MonthColumn[] {
   const now = new Date();
   const keys = Array.from({ length: monthsAhead + 1 }, (_, i) => {
     const d = new Date(now.getFullYear(), now.getMonth() + i, 1);
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
   });
-  return buildColumns(allEntries, checklistItems, profiles, keys);
+  const entriesFiltradas = pessoa ? allEntries.filter((e) => e.autor === pessoa) : allEntries;
+  const profilesFiltrados = pessoa ? profiles.filter((p) => personNameFor(p.email) === pessoa) : profiles;
+  return buildColumns(entriesFiltradas, checklistItems, profilesFiltrados, keys);
 }

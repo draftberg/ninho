@@ -3,7 +3,10 @@
 import {
   Chart as ChartJS,
   BarController,
+  LineController,
   BarElement,
+  LineElement,
+  PointElement,
   CategoryScale,
   LinearScale,
   Tooltip,
@@ -13,11 +16,21 @@ import {
 import { Chart } from "react-chartjs-2";
 import { formatBRL } from "@/lib/format";
 
-ChartJS.register(BarController, BarElement, CategoryScale, LinearScale, Tooltip);
+ChartJS.register(
+  BarController,
+  LineController,
+  BarElement,
+  LineElement,
+  PointElement,
+  CategoryScale,
+  LinearScale,
+  Tooltip,
+);
 
 const CORES = {
   entrada: { forte: "#2B5049", fraca: "rgba(43, 80, 73, 0.2)" },
   saida: { forte: "#D9836F", fraca: "rgba(217, 131, 111, 0.2)" },
+  saldoAcumulado: { forte: "#C99A3E", fraca: "rgba(201, 154, 62, 0.35)" },
 };
 
 function corFlat(tone: { forte: string; fraca: string }, selecionado: number | null) {
@@ -29,12 +42,14 @@ export function CashFlowChart({
   labels,
   entradas,
   saidas,
+  saldoAcumulado,
   selecionado,
   onSelecionar,
 }: {
   labels: string[];
   entradas: number[];
   saidas: number[];
+  saldoAcumulado: number[];
   selecionado: number | null;
   onSelecionar: (index: number | null) => void;
 }) {
@@ -46,6 +61,7 @@ export function CashFlowChart({
           labels,
           datasets: [
             {
+              type: "bar" as const,
               label: "Total de entrada",
               data: entradas,
               backgroundColor: corFlat(CORES.entrada, selecionado),
@@ -53,8 +69,10 @@ export function CashFlowChart({
               borderSkipped: false,
               categoryPercentage: 0.6,
               barPercentage: 0.9,
+              yAxisID: "y",
             },
             {
+              type: "bar" as const,
               label: "Total de saída",
               data: saidas,
               backgroundColor: corFlat(CORES.saida, selecionado),
@@ -62,6 +80,20 @@ export function CashFlowChart({
               borderSkipped: false,
               categoryPercentage: 0.6,
               barPercentage: 0.9,
+              yAxisID: "y",
+            },
+            {
+              type: "line" as const,
+              label: "Saldo acumulado",
+              data: saldoAcumulado,
+              borderColor: CORES.saldoAcumulado.forte,
+              backgroundColor: CORES.saldoAcumulado.forte,
+              borderWidth: 2,
+              pointRadius: (ctx) => (ctx.dataIndex === selecionado ? 5 : 2),
+              pointHoverRadius: 6,
+              pointBackgroundColor: corFlat(CORES.saldoAcumulado, selecionado),
+              tension: 0.35,
+              yAxisID: "y1",
             },
           ],
         }}
@@ -103,6 +135,12 @@ export function CashFlowChart({
             },
             y: {
               grid: { color: "rgba(0, 0, 0, 0.05)" },
+              border: { display: false },
+              ticks: { display: false },
+            },
+            y1: {
+              position: "right",
+              grid: { drawOnChartArea: false },
               border: { display: false },
               ticks: { display: false },
             },

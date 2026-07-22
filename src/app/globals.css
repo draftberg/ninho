@@ -1926,7 +1926,7 @@ a {
   justify-content: space-between;
   gap: 1rem;
   flex-wrap: wrap;
-  margin-bottom: 1rem;
+  margin-bottom: 2rem;
 }
 
 .cashflow-hero-label {
@@ -1971,6 +1971,30 @@ a {
   background: currentColor;
 }
 
+.cashflow-visao-toggle {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 0.85rem;
+}
+
+.cashflow-visao-toggle button {
+  padding: 0.45rem 0.9rem;
+  border-radius: 0.8rem;
+  border: 1px solid var(--color-border);
+  background: var(--color-card);
+  font-family: var(--font-body);
+  font-weight: 700;
+  font-size: 0.82rem;
+  color: var(--color-ink-muted);
+  cursor: pointer;
+}
+
+.cashflow-visao-toggle button.active {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+  color: #fff;
+}
+
 .cashflow-legend-item.entrada {
   color: var(--color-pastel-entrada-ink);
 }
@@ -1997,6 +2021,7 @@ a {
 }
 
 .cashflow-month-card {
+  position: relative;
   scroll-snap-align: start;
   flex: 0 0 auto;
   width: 148px;
@@ -2018,8 +2043,29 @@ a {
 }
 
 .cashflow-month-card.active {
-  border-color: var(--color-gold);
-  box-shadow: 0 0 0 1px var(--color-gold);
+  border-color: transparent;
+}
+
+.cashflow-month-card.active::before {
+  content: "";
+  position: absolute;
+  inset: -2px;
+  border-radius: inherit;
+  padding: 2px;
+  background: conic-gradient(from 0deg, var(--color-gold), transparent 25%, transparent 75%, var(--color-gold));
+  -webkit-mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  animation: cashflow-ring-spin 2.2s linear infinite;
+  pointer-events: none;
+}
+
+@keyframes cashflow-ring-spin {
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .cashflow-month-header {
@@ -2053,11 +2099,17 @@ a {
   margin-top: 0.15rem;
 }
 
+.cashflow-month-acumulado-label {
+  font-size: 0.68rem;
+  color: var(--color-ink-muted);
+  margin-top: 0.15rem;
+}
+
 .cashflow-month-acumulado {
   font-family: var(--font-mono);
   font-weight: 700;
   font-size: 1rem;
-  margin-top: 0.1rem;
+  margin-top: -0.1rem;
 }
 
 /* ---------- Painel: layout com coluna lateral ---------- */

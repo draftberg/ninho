@@ -17,7 +17,7 @@ import {
   composicaoPorPessoa,
   porPessoa,
 } from "@/lib/aggregate";
-import { buildCashFlow, buildRollingCashFlow } from "@/lib/cashflow";
+import { buildCashFlow } from "@/lib/cashflow";
 import { goalProjections } from "@/lib/projections";
 import { formatBRL, monthLabel } from "@/lib/format";
 import { categoriaLabel, type Tipo } from "@/lib/types";
@@ -177,8 +177,6 @@ export default async function DashboardPage({
   const primeiroMesComprometido = mesesComprometidos[0] ?? null;
   const projecoesMetas = goalProjections(allEntries, goals).filter((p) => p.status !== "sem_prazo");
 
-  const cashFlowFuturo = buildRollingCashFlow(allEntries, checklistItems, profiles, 12);
-
   const calEntries = allEntries.filter((e) => e.date.startsWith(calMes));
   const calGoals = goals.filter((g) => g.data_alvo?.startsWith(calMes));
   const calDoneItemIds = new Set(calStatus.filter((s) => s.concluido).map((s) => s.item_id));
@@ -291,7 +289,7 @@ export default async function DashboardPage({
       <p className="entry-meta cashflow-hint">
         Meses futuros sem lançamentos usam o salário base do perfil e os itens do checklist como previsão.
       </p>
-      <CashFlowSection columns={cashFlowFuturo} />
+      <CashFlowSection allEntries={allEntries} checklistItems={checklistItems} profiles={profiles} />
 
       {saldoCasal && (
         <div className="saldo-casal-card card">

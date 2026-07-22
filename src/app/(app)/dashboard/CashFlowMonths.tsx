@@ -37,6 +37,7 @@ export function CashFlowMonths({
           <div className={`cashflow-month-row saldo ${c.saldoMes >= 0 ? "saldo-positivo" : "saldo-negativo"}`}>
             Saldo mensal: {formatBRL(c.saldoMes)}
           </div>
+          <div className="cashflow-month-acumulado-label">Saldo acumulado</div>
           <div
             className={`cashflow-month-acumulado ${c.saldoAcumulado >= 0 ? "saldo-positivo" : "saldo-negativo"}`}
           >
