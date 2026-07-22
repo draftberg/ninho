@@ -33,13 +33,12 @@ import {
   UserCircleIcon,
 } from "@phosphor-icons/react/dist/ssr";
 import { DonutChart } from "@/components/charts/DonutChart";
-import { CashFlowChart } from "@/components/charts/CashFlowChart";
 import { MonthFilter } from "@/components/MonthFilter";
 import { YearFilter } from "@/components/YearFilter";
 import { PeriodToggle, type Periodo } from "@/components/PeriodToggle";
 import { InsightsCard } from "./InsightsCard";
 import { PredictionsCard } from "./PredictionsCard";
-import { CashFlowTable } from "./CashFlowTable";
+import { CashFlowSection } from "./CashFlowSection";
 import { MiniCalendarPanel } from "./MiniCalendarPanel";
 import { ChecklistItemRow } from "../checklist/ChecklistItemRow";
 import Link from "next/link";
@@ -292,16 +291,7 @@ export default async function DashboardPage({
       <p className="entry-meta cashflow-hint">
         Meses futuros sem lançamentos usam o salário base do perfil e os itens do checklist como previsão.
       </p>
-      <div className="chart-card">
-        <CashFlowChart
-          labels={cashFlowFuturo.map((c) => c.label)}
-          entradas={cashFlowFuturo.map((c) => c.totalEntrada)}
-          saidas={cashFlowFuturo.map((c) => c.totalSaida)}
-          saldoMes={cashFlowFuturo.map((c) => c.saldoMes)}
-          saldoAcumulado={cashFlowFuturo.map((c) => c.saldoAcumulado)}
-        />
-      </div>
-      <CashFlowTable columns={cashFlowFuturo} />
+      <CashFlowSection columns={cashFlowFuturo} />
 
       {saldoCasal && (
         <div className="saldo-casal-card card">

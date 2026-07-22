@@ -1916,74 +1916,85 @@ a {
   margin: -0.5rem 0 0.85rem;
 }
 
-.cashflow-wrap {
-  overflow-x: auto;
-  border: 1px solid var(--color-border);
-  border-radius: 1rem;
-  margin-bottom: 1.5rem;
-}
-
-.cashflow-table {
-  border-collapse: collapse;
-  width: 100%;
-  font-size: 0.82rem;
-}
-
-.cashflow-table th,
-.cashflow-table td {
-  padding: 0.5rem 0.75rem;
-  text-align: right;
-  white-space: nowrap;
-  border-bottom: 1px solid var(--color-border);
-}
-
-.cashflow-table th:first-child,
-.cashflow-table td:first-child {
-  text-align: left;
-  position: sticky;
-  left: 0;
-  background: var(--color-card);
-  font-weight: 600;
-  color: var(--color-ink-muted);
-}
-
-.cashflow-table thead th {
-  background: var(--color-bg);
-  font-weight: 700;
-  color: var(--color-ink);
-}
-
-.cashflow-table thead th.projetado {
-  color: var(--color-ink-muted);
-}
-
 .cashflow-badge {
-  display: block;
+  display: inline-block;
   font-size: 0.6rem;
   font-weight: 700;
   text-transform: uppercase;
   color: var(--color-gold);
 }
 
-.cashflow-row-muted td {
-  color: var(--color-ink-muted);
+.cashflow-months {
+  display: flex;
+  gap: 0.75rem;
+  overflow-x: auto;
+  padding-bottom: 0.4rem;
+  margin-bottom: 1.5rem;
+  scroll-snap-type: x proximity;
 }
 
-.cashflow-row-strong td {
+.cashflow-month-card {
+  scroll-snap-align: start;
+  flex: 0 0 auto;
+  width: 148px;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  padding: 0.85rem 0.9rem;
+  border-radius: 1.1rem;
+  background: var(--color-card);
+  border: 1px solid var(--color-border);
+  text-align: left;
+  cursor: pointer;
+  font-family: var(--font-body);
+  transition: border-color 0.15s ease, transform 0.15s ease;
+}
+
+.cashflow-month-card:hover {
+  transform: translateY(-2px);
+}
+
+.cashflow-month-card.active {
+  border-color: var(--color-gold);
+  box-shadow: 0 0 0 1px var(--color-gold);
+}
+
+.cashflow-month-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
   font-weight: 700;
+  font-size: 0.85rem;
 }
 
-.cashflow-row-strong td.entrada {
+.cashflow-month-row {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+}
+
+.cashflow-month-row.entrada {
   color: var(--color-pastel-entrada-ink);
 }
 
-.cashflow-row-strong td.saida {
+.cashflow-month-row.saida {
   color: var(--color-pastel-saida-ink);
 }
 
-.cashflow-row-total td {
+.cashflow-month-row.saldo {
+  font-family: var(--font-body);
+  font-size: 0.72rem;
+  color: var(--color-ink-muted);
+  margin-top: 0.15rem;
+}
+
+.cashflow-month-acumulado {
+  font-family: var(--font-mono);
   font-weight: 700;
-  background: var(--color-bg);
+  font-size: 1rem;
+  margin-top: 0.1rem;
 }
 
 /* ---------- Painel: layout com coluna lateral ---------- */
