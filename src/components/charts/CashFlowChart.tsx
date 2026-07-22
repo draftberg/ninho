@@ -49,7 +49,7 @@ export function CashFlowChart({
           datasets: [
             {
               type: "bar" as const,
-              label: "Entradas",
+              label: "Total de entrada",
               data: entradas,
               backgroundColor: "#2B5049",
               borderRadius: 4,
@@ -57,7 +57,7 @@ export function CashFlowChart({
             },
             {
               type: "bar" as const,
-              label: "Gastos",
+              label: "Total de saída",
               data: saidas,
               backgroundColor: "#D9836F",
               borderRadius: 4,
@@ -65,7 +65,7 @@ export function CashFlowChart({
             },
             {
               type: "line" as const,
-              label: "Saldo do mês",
+              label: "Saldo mensal",
               data: saldoMes,
               borderColor: "#2B537F",
               backgroundColor: "#2B537F",
