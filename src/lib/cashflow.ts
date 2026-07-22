@@ -101,11 +101,12 @@ export function buildCashFlow(
 // ano-calendário fixo — usado no Painel pra sempre mostrar a previsão dos
 // próximos 12 meses, independente do filtro de ano selecionado.
 //
-// `pessoa`, quando informado, restringe a visão aos lançamentos reais dessa
-// pessoa e ao salário previsto só dela — mas os itens do checklist (contas
-// compartilhadas, cartão, financiamento) continuam entrando por inteiro na
-// projeção de meses futuros, já que não têm dono: representam o que ainda
-// precisa ser pago, dividido ou não.
+// `pessoa`, quando informado, restringe a visão só aos lançamentos reais
+// dessa pessoa e ao salário previsto só dela. Os itens do checklist (contas
+// compartilhadas, cartão, financiamento) não têm um "dono" individual no
+// modelo de dados, então na visão de uma pessoa eles são zerados em vez de
+// contados por inteiro — senão a projeção futura mostraria o gasto do casal
+// inteiro como se fosse só daquela pessoa.
 export function buildRollingCashFlow(
   allEntries: Entry[],
   checklistItems: ChecklistItem[],
@@ -120,5 +121,6 @@ export function buildRollingCashFlow(
   });
   const entriesFiltradas = pessoa ? allEntries.filter((e) => e.autor === pessoa) : allEntries;
   const profilesFiltrados = pessoa ? profiles.filter((p) => personNameFor(p.email) === pessoa) : profiles;
-  return buildColumns(entriesFiltradas, checklistItems, profilesFiltrados, keys);
+  const checklistFiltrado = pessoa ? [] : checklistItems;
+  return buildColumns(entriesFiltradas, checklistFiltrado, profilesFiltrados, keys);
 }
