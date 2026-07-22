@@ -11,7 +11,7 @@ export function EditCartaoForm({ cartao }: { cartao: Cartao }) {
   const [nome, setNome] = useState(cartao.nome);
   const [banco, setBanco] = useState(cartao.banco ?? "");
   const [bandeira, setBandeira] = useState(cartao.bandeira ?? BANDEIRAS[0]);
-  const [pessoa, setPessoa] = useState(cartao.pessoa ?? PERSON_DISPLAY_NAMES[0]);
+  const [pessoa, setPessoa] = useState(cartao.pessoa ?? "");
 
   if (!editing) {
     return (
@@ -58,7 +58,10 @@ export function EditCartaoForm({ cartao }: { cartao: Cartao }) {
       </label>
       <label>
         Dono
-        <select name="pessoa" value={pessoa} onChange={(e) => setPessoa(e.target.value)}>
+        <select name="pessoa" value={pessoa} onChange={(e) => setPessoa(e.target.value)} required>
+          <option value="" disabled>
+            Sem dono — selecione
+          </option>
           {PERSON_DISPLAY_NAMES.map((p) => (
             <option key={p} value={p}>
               {p}

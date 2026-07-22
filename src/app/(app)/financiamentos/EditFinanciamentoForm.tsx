@@ -10,7 +10,7 @@ const CATEGORIAS_SAIDA = categoriasDoTipo("saida");
 export function EditFinanciamentoForm({ financiamento }: { financiamento: Financiamento }) {
   const [editing, setEditing] = useState(false);
   const [categoria, setCategoria] = useState(financiamento.categoria);
-  const [pessoa, setPessoa] = useState(financiamento.pessoa ?? PERSON_DISPLAY_NAMES[0]);
+  const [pessoa, setPessoa] = useState(financiamento.pessoa ?? "");
   const subcategorias = subcategoriasDaCategoria("saida", categoria);
 
   if (!editing) {
@@ -87,7 +87,10 @@ export function EditFinanciamentoForm({ financiamento }: { financiamento: Financ
       </label>
       <label>
         Dono
-        <select name="pessoa" value={pessoa} onChange={(e) => setPessoa(e.target.value)}>
+        <select name="pessoa" value={pessoa} onChange={(e) => setPessoa(e.target.value)} required>
+          <option value="" disabled>
+            Sem dono — selecione
+          </option>
           {PERSON_DISPLAY_NAMES.map((p) => (
             <option key={p} value={p}>
               {p}
