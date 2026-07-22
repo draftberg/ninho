@@ -157,7 +157,7 @@ export function ProfileForm({ email, profile }: { email: string; profile: Profil
         <ConfirmDeleteButton
           label="Resetar informações do perfil"
           title="Resetar perfil"
-          description="Isso apaga nome, sobrenome, telefone e o planejamento de salário deste perfil, incluindo as entradas futuras ainda não confirmadas no checklist. Salários já confirmados continuam no Histórico normalmente."
+          description="Isso apaga TUDO que você preencheu no app: perfil (nome, sobrenome, telefone, salário), seus lançamentos no Histórico, seus cartões, financiamentos e itens de checklist, suas metas de gasto, suas conversas do chat e sua inscrição de lembretes. Não afeta os dados da outra pessoa nem metas compartilhadas (reserva, viagens etc.). Não tem como desfazer."
           onConfirm={resetProfile}
           className="danger-outline-button"
         />

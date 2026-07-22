@@ -572,13 +572,48 @@ export async function upsertProfile(formData: FormData) {
   revalidatePath("/dashboard");
 }
 
+// Apaga tudo que essa pessoa preencheu no app: lançamentos reais no
+// Histórico, cartões/financiamentos/itens de checklist manuais dos quais é
+// dona, metas de gasto, conversas do chat, inscrição de lembretes push e o
+// perfil em si (nome/sobrenome/telefone/salário). Cartões e financiamentos
+// derrubam junto seus itens de checklist sincronizados (cascade em
+// origem_cartao_id/origem_financiamento_id), e o perfil derruba os itens de
+// salário (origem_profile_id) — daí a ordem: primeiro os dados soltos,
+// cartão/financiamento por último antes do perfil.
 export async function resetProfile() {
-  const { supabase, email } = await currentAuthor();
+  const { supabase, autor, email } = await currentAuthor();
   if (!email) throw new Error("Usuário não autenticado.");
 
-  // apaga o perfil inteiro — os itens de checklist "a_receber" ligados a ele
-  // somem junto (cascata), mas os lançamentos de salário já confirmados
-  // continuam no Histórico normalmente.
+  const { error: entriesError } = await supabase.from("entries").delete().eq("autor", autor);
+  if (entriesError) throw new Error(entriesError.message);
+
+  const { error: budgetError } = await supabase.from("budget_limits").delete().eq("autor", autor);
+  if (budgetError) throw new Error(budgetError.message);
+
+  const { error: chatError } = await supabase.from("chat_conversas").delete().eq("autor", autor);
+  if (chatError) throw new Error(chatError.message);
+
+  const { error: pushError } = await supabase.from("push_subscriptions").delete().eq("autor", autor);
+  if (pushError) throw new Error(pushError.message);
+
+  const { error: manualChecklistError } = await supabase
+    .from("checklist_items")
+    .delete()
+    .eq("pessoa", autor)
+    .is("origem_cartao_id", null)
+    .is("origem_financiamento_id", null)
+    .is("origem_profile_id", null);
+  if (manualChecklistError) throw new Error(manualChecklistError.message);
+
+  const { error: cartoesError } = await supabase.from("cartoes").delete().eq("pessoa", autor);
+  if (cartoesError) throw new Error(cartoesError.message);
+
+  const { error: financiamentosError } = await supabase
+    .from("financiamentos")
+    .delete()
+    .eq("pessoa", autor);
+  if (financiamentosError) throw new Error(financiamentosError.message);
+
   const { error } = await supabase.from("profiles").delete().eq("email", email);
   if (error) throw new Error(error.message);
 
@@ -586,6 +621,10 @@ export async function resetProfile() {
   revalidatePath("/checklist");
   revalidatePath("/calendario");
   revalidatePath("/dashboard");
+  revalidatePath("/historico");
+  revalidatePath("/cartoes");
+  revalidatePath("/financiamentos");
+  revalidatePath("/orcamento");
 }
 
 export async function upsertBudgetLimits(rows: NewBudgetLimit[]) {
