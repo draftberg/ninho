@@ -14,14 +14,42 @@ import {
   TrashIcon,
   SparkleIcon,
   CheckIcon,
+  PaperclipIcon,
 } from "@phosphor-icons/react";
+
+type PropostaStatus = "pendente" | "confirmando" | "confirmado" | "cancelado";
 
 interface DisplayMessage {
   role: "user" | "assistant";
   content: string;
   local?: boolean;
-  proposta?: LancamentoProposto;
-  propostaStatus?: "pendente" | "confirmando" | "confirmado" | "cancelado";
+  propostas?: LancamentoProposto[];
+  propostaStatus?: PropostaStatus[];
+}
+
+const TIPOS_ANEXO_ACEITOS = ["image/jpeg", "image/png", "application/pdf"];
+const TAMANHO_MAXIMO_ANEXO = 8 * 1024 * 1024; // 8MB antes de comprimir (fotos são reduzidas depois)
+
+// Reduz uma foto pro maior lado caber em ~1600px antes de enviar — evita
+// estourar o limite de corpo de requisição da função serverless e deixa o
+// upload mais rápido, sem perder legibilidade do documento.
+async function redimensionarImagem(file: File): Promise<File> {
+  const bitmap = await createImageBitmap(file);
+  const maiorLado = Math.max(bitmap.width, bitmap.height);
+  const escala = Math.min(1, 1600 / maiorLado);
+  const largura = Math.round(bitmap.width * escala);
+  const altura = Math.round(bitmap.height * escala);
+
+  const canvas = document.createElement("canvas");
+  canvas.width = largura;
+  canvas.height = altura;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return file;
+  ctx.drawImage(bitmap, 0, 0, largura, altura);
+
+  const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, "image/jpeg", 0.82));
+  if (!blob) return file;
+  return new File([blob], file.name.replace(/\.\w+$/, ".jpg"), { type: "image/jpeg" });
 }
 
 function saudacaoProativa(alerts: string[]): string {
@@ -41,9 +69,11 @@ export function ChatWidget({ alerts }: { alerts: string[] }) {
     { role: "assistant", content: saudacaoProativa(alerts), local: true },
   ]);
   const [input, setInput] = useState("");
+  const [arquivo, setArquivo] = useState<File | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
   const scrollRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
@@ -105,21 +135,64 @@ export function ChatWidget({ alerts }: { alerts: string[] }) {
     });
   }
 
+  async function handleArquivoSelecionado(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = ""; // permite selecionar o mesmo arquivo de novo depois
+    if (!file) return;
+    setError(null);
+
+    if (!TIPOS_ANEXO_ACEITOS.includes(file.type)) {
+      setError("Anexe uma imagem (JPEG/PNG) ou um PDF.");
+      return;
+    }
+    if (file.size > TAMANHO_MAXIMO_ANEXO) {
+      setError("Arquivo muito grande — o limite é 8MB.");
+      return;
+    }
+
+    if (file.type === "application/pdf") {
+      setArquivo(file);
+      return;
+    }
+    try {
+      setArquivo(await redimensionarImagem(file));
+    } catch (err) {
+      console.error("[chat] falha ao redimensionar imagem:", err);
+      setArquivo(file);
+    }
+  }
+
   function handleSend() {
     const texto = input.trim();
-    if (!texto || isPending) return;
+    const arquivoAtual = arquivo;
+    if ((!texto && !arquivoAtual) || isPending) return;
     setInput("");
+    setArquivo(null);
     setError(null);
     const isNova = !conversaId;
-    setMensagens((prev) => [...prev, { role: "user", content: texto }, { role: "assistant", content: "" }]);
+    const conteudoUsuario = arquivoAtual ? [texto, `📎 ${arquivoAtual.name}`].filter(Boolean).join("\n") : texto;
+    setMensagens((prev) => [
+      ...prev,
+      { role: "user", content: conteudoUsuario },
+      { role: "assistant", content: "" },
+    ]);
 
     startTransition(async () => {
       try {
-        const response = await fetch("/api/chat", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ conversaId, texto }),
-        });
+        let response: Response;
+        if (arquivoAtual) {
+          const formData = new FormData();
+          if (conversaId) formData.set("conversaId", conversaId);
+          formData.set("texto", texto);
+          formData.set("file", arquivoAtual);
+          response = await fetch("/api/chat", { method: "POST", body: formData });
+        } else {
+          response = await fetch("/api/chat", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ conversaId, texto }),
+          });
+        }
 
         if (!response.ok || !response.body) {
           const mensagemErro = (await response.text()) || "Não foi possível responder agora.";
@@ -158,17 +231,21 @@ export function ChatWidget({ alerts }: { alerts: string[] }) {
         const indiceSentinel = bruto.indexOf(LANCAMENTO_SENTINEL);
         if (indiceSentinel >= 0) {
           try {
-            const proposta = JSON.parse(
+            const propostas = JSON.parse(
               bruto.slice(indiceSentinel + LANCAMENTO_SENTINEL.length),
-            ) as LancamentoProposto;
+            ) as LancamentoProposto[];
             setMensagens((prev) => {
               const proximo = [...prev];
               const ultimo = proximo[proximo.length - 1];
-              proximo[proximo.length - 1] = { ...ultimo, proposta, propostaStatus: "pendente" };
+              proximo[proximo.length - 1] = {
+                ...ultimo,
+                propostas,
+                propostaStatus: propostas.map(() => "pendente" as PropostaStatus),
+              };
               return proximo;
             });
           } catch (err) {
-            console.error("[chat] falha ao interpretar proposta de lançamento:", err);
+            console.error("[chat] falha ao interpretar propostas de lançamento:", err);
           }
         }
       } catch (err) {
@@ -179,40 +256,42 @@ export function ChatWidget({ alerts }: { alerts: string[] }) {
     });
   }
 
-  function handleConfirmarProposta(index: number) {
-    const proposta = mensagens[index]?.proposta;
-    if (!proposta) return;
+  function atualizarStatusProposta(messageIndex: number, itemIndex: number, status: PropostaStatus) {
     setMensagens((prev) => {
       const proximo = [...prev];
-      proximo[index] = { ...proximo[index], propostaStatus: "confirmando" };
+      const atual = proximo[messageIndex];
+      const novoStatus = [...(atual.propostaStatus ?? [])];
+      novoStatus[itemIndex] = status;
+      proximo[messageIndex] = { ...atual, propostaStatus: novoStatus };
       return proximo;
     });
+  }
+
+  function handleConfirmarProposta(messageIndex: number, itemIndex: number) {
+    const proposta = mensagens[messageIndex]?.propostas?.[itemIndex];
+    if (!proposta) return;
+    atualizarStatusProposta(messageIndex, itemIndex, "confirmando");
     startTransition(async () => {
       try {
         const result = await confirmarLancamentoChat(proposta);
-        setMensagens((prev) => {
-          const proximo = [...prev];
-          proximo[index] = { ...proximo[index], propostaStatus: result.error ? "pendente" : "confirmado" };
-          return proximo;
-        });
+        atualizarStatusProposta(messageIndex, itemIndex, result.error ? "pendente" : "confirmado");
         if (result.error) setError(result.error);
       } catch (err) {
         console.error("[chat] falha ao confirmar lançamento:", err);
-        setMensagens((prev) => {
-          const proximo = [...prev];
-          proximo[index] = { ...proximo[index], propostaStatus: "pendente" };
-          return proximo;
-        });
+        atualizarStatusProposta(messageIndex, itemIndex, "pendente");
         setError("Não foi possível salvar o lançamento agora. Tente novamente.");
       }
     });
   }
 
-  function handleCancelarProposta(index: number) {
-    setMensagens((prev) => {
-      const proximo = [...prev];
-      proximo[index] = { ...proximo[index], propostaStatus: "cancelado" };
-      return proximo;
+  function handleCancelarProposta(messageIndex: number, itemIndex: number) {
+    atualizarStatusProposta(messageIndex, itemIndex, "cancelado");
+  }
+
+  function handleConfirmarTodos(messageIndex: number) {
+    const status = mensagens[messageIndex]?.propostaStatus ?? [];
+    status.forEach((s, itemIndex) => {
+      if (s === "pendente") handleConfirmarProposta(messageIndex, itemIndex);
     });
   }
 
@@ -309,7 +388,7 @@ export function ChatWidget({ alerts }: { alerts: string[] }) {
                     i === mensagens.length - 1 &&
                     m.role === "assistant" &&
                     !m.content &&
-                    !m.proposta;
+                    !m.propostas;
                   return (
                     <div
                       key={i}
@@ -324,48 +403,65 @@ export function ChatWidget({ alerts }: { alerts: string[] }) {
                       ) : (
                         <>
                           {m.content}
-                          {m.proposta && (
-                            <div className="chat-proposta-card">
-                              <div className="chat-proposta-header">
-                                <span className={`chat-proposta-tipo ${m.proposta.tipo}`}>
-                                  {TIPO_LABELS[m.proposta.tipo]}
-                                </span>
-                                <span className="chat-proposta-valor">{formatBRL(m.proposta.valor)}</span>
-                              </div>
-                              <div className="chat-proposta-detalhe">
-                                {categoriaLabel(m.proposta.tipo, m.proposta.categoria)} ·{" "}
-                                {subcategoriaLabel(m.proposta.tipo, m.proposta.categoria, m.proposta.subcategoria)}
-                              </div>
-                              <div className="chat-proposta-detalhe">
-                                {formatDate(m.proposta.date)}
-                                {m.proposta.descricao ? ` · ${m.proposta.descricao}` : ""}
-                              </div>
-                              {(m.propostaStatus === "pendente" || m.propostaStatus === "confirmando") && (
-                                <div className="chat-proposta-actions">
+                          {m.propostas && m.propostas.length > 0 && (
+                            <div className="chat-proposta-list">
+                              {m.propostas.length > 1 &&
+                                m.propostaStatus?.some((s) => s === "pendente") && (
                                   <button
                                     type="button"
-                                    className="chat-proposta-confirm"
-                                    disabled={m.propostaStatus === "confirmando"}
-                                    onClick={() => handleConfirmarProposta(i)}
+                                    className="chat-proposta-confirm-all"
+                                    onClick={() => handleConfirmarTodos(i)}
                                   >
-                                    <CheckIcon size={14} weight="bold" /> Confirmar
+                                    <CheckIcon size={14} weight="bold" /> Confirmar todos
                                   </button>
-                                  <button
-                                    type="button"
-                                    className="chat-proposta-cancel"
-                                    disabled={m.propostaStatus === "confirmando"}
-                                    onClick={() => handleCancelarProposta(i)}
-                                  >
-                                    Cancelar
-                                  </button>
-                                </div>
-                              )}
-                              {m.propostaStatus === "confirmado" && (
-                                <p className="chat-proposta-status ok">Lançamento salvo.</p>
-                              )}
-                              {m.propostaStatus === "cancelado" && (
-                                <p className="chat-proposta-status">Descartado.</p>
-                              )}
+                                )}
+                              {m.propostas.map((proposta, j) => {
+                                const status = m.propostaStatus?.[j] ?? "pendente";
+                                return (
+                                  <div className="chat-proposta-card" key={j}>
+                                    <div className="chat-proposta-header">
+                                      <span className={`chat-proposta-tipo ${proposta.tipo}`}>
+                                        {TIPO_LABELS[proposta.tipo]}
+                                      </span>
+                                      <span className="chat-proposta-valor">{formatBRL(proposta.valor)}</span>
+                                    </div>
+                                    <div className="chat-proposta-detalhe">
+                                      {categoriaLabel(proposta.tipo, proposta.categoria)} ·{" "}
+                                      {subcategoriaLabel(proposta.tipo, proposta.categoria, proposta.subcategoria)}
+                                    </div>
+                                    <div className="chat-proposta-detalhe">
+                                      {formatDate(proposta.date)}
+                                      {proposta.descricao ? ` · ${proposta.descricao}` : ""}
+                                    </div>
+                                    {(status === "pendente" || status === "confirmando") && (
+                                      <div className="chat-proposta-actions">
+                                        <button
+                                          type="button"
+                                          className="chat-proposta-confirm"
+                                          disabled={status === "confirmando"}
+                                          onClick={() => handleConfirmarProposta(i, j)}
+                                        >
+                                          <CheckIcon size={14} weight="bold" /> Confirmar
+                                        </button>
+                                        <button
+                                          type="button"
+                                          className="chat-proposta-cancel"
+                                          disabled={status === "confirmando"}
+                                          onClick={() => handleCancelarProposta(i, j)}
+                                        >
+                                          Cancelar
+                                        </button>
+                                      </div>
+                                    )}
+                                    {status === "confirmado" && (
+                                      <p className="chat-proposta-status ok">Lançamento salvo.</p>
+                                    )}
+                                    {status === "cancelado" && (
+                                      <p className="chat-proposta-status">Descartado.</p>
+                                    )}
+                                  </div>
+                                );
+                              })}
                             </div>
                           )}
                         </>
@@ -375,6 +471,15 @@ export function ChatWidget({ alerts }: { alerts: string[] }) {
                 })}
                 {error && <p className="form-message error">{error}</p>}
               </div>
+              {arquivo && (
+                <div className="chat-attachment-chip">
+                  <PaperclipIcon size={14} />
+                  <span>{arquivo.name}</span>
+                  <button type="button" onClick={() => setArquivo(null)} aria-label="Remover anexo">
+                    <XIcon size={12} weight="bold" />
+                  </button>
+                </div>
+              )}
               <form
                 className="chat-input-row"
                 onSubmit={(e) => {
@@ -383,13 +488,34 @@ export function ChatWidget({ alerts }: { alerts: string[] }) {
                 }}
               >
                 <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/jpeg,image/png,application/pdf"
+                  onChange={handleArquivoSelecionado}
+                  hidden
+                />
+                <button
+                  type="button"
+                  className="chat-attach-button"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={isPending}
+                  aria-label="Anexar foto ou PDF"
+                  title="Anexar foto ou PDF (comprovante, nota, extrato)"
+                >
+                  <PaperclipIcon size={18} />
+                </button>
+                <input
                   type="text"
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
                   placeholder="Pergunte alguma coisa..."
                   disabled={isPending}
                 />
-                <button type="submit" className="chat-send-button" disabled={isPending || !input.trim()}>
+                <button
+                  type="submit"
+                  className="chat-send-button"
+                  disabled={isPending || (!input.trim() && !arquivo)}
+                >
                   <PaperPlaneRightIcon size={18} weight="fill" />
                 </button>
               </form>
