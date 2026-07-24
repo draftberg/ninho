@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState, useTransition } from "react";
 import { listarConversas, carregarMensagens, deletarConversa, confirmarLancamentoChat } from "@/lib/chat";
 import { LANCAMENTO_SENTINEL, type LancamentoProposto } from "@/lib/chat-shared";
+import { redimensionarImagem } from "@/lib/image-resize";
 import { formatBRL, formatDate } from "@/lib/format";
 import { categoriaLabel, subcategoriaLabel, TIPO_LABELS, type ChatConversa } from "@/lib/types";
 import {
@@ -29,28 +30,6 @@ interface DisplayMessage {
 
 const TIPOS_ANEXO_ACEITOS = ["image/jpeg", "image/png", "application/pdf"];
 const TAMANHO_MAXIMO_ANEXO = 8 * 1024 * 1024; // 8MB antes de comprimir (fotos são reduzidas depois)
-
-// Reduz uma foto pro maior lado caber em ~1600px antes de enviar — evita
-// estourar o limite de corpo de requisição da função serverless e deixa o
-// upload mais rápido, sem perder legibilidade do documento.
-async function redimensionarImagem(file: File): Promise<File> {
-  const bitmap = await createImageBitmap(file);
-  const maiorLado = Math.max(bitmap.width, bitmap.height);
-  const escala = Math.min(1, 1600 / maiorLado);
-  const largura = Math.round(bitmap.width * escala);
-  const altura = Math.round(bitmap.height * escala);
-
-  const canvas = document.createElement("canvas");
-  canvas.width = largura;
-  canvas.height = altura;
-  const ctx = canvas.getContext("2d");
-  if (!ctx) return file;
-  ctx.drawImage(bitmap, 0, 0, largura, altura);
-
-  const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, "image/jpeg", 0.82));
-  if (!blob) return file;
-  return new File([blob], file.name.replace(/\.\w+$/, ".jpg"), { type: "image/jpeg" });
-}
 
 function saudacaoProativa(alerts: string[]): string {
   if (alerts.length === 0) {

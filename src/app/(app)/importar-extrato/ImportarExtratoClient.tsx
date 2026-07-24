@@ -3,6 +3,7 @@
 import { useRef, useState } from "react";
 import { extractTransactions } from "@/lib/import-extrato";
 import { saveImportedEntries } from "@/lib/actions";
+import { redimensionarImagem } from "@/lib/image-resize";
 import {
   CATEGORIAS,
   TIPO_LABELS,
@@ -30,8 +31,11 @@ export function ImportarExtratoClient({ goals }: { goals: Goal[] }) {
     setError(null);
     setSaved(false);
 
+    const arquivo =
+      file.type === "image/jpeg" || file.type === "image/png" ? await redimensionarImagem(file) : file;
+
     const formData = new FormData();
-    formData.set("file", file);
+    formData.set("file", arquivo);
 
     const result = await extractTransactions(formData);
     setLoading(false);
@@ -74,11 +78,13 @@ export function ImportarExtratoClient({ goals }: { goals: Goal[] }) {
         <input
           ref={fileInputRef}
           type="file"
-          accept=".pdf,.csv,.txt,text/csv,text/plain,application/pdf"
+          accept=".pdf,.csv,.txt,.jpg,.jpeg,.png,text/csv,text/plain,application/pdf,image/jpeg,image/png"
           hidden
           onChange={handleFileChange}
         />
-        {loading ? "Processando arquivo com IA..." : "Toque para enviar um extrato (PDF, CSV ou TXT)"}
+        {loading
+          ? "Processando arquivo com IA..."
+          : "Toque para enviar um extrato ou uma foto (PDF, imagem, CSV ou TXT)"}
       </div>
 
       {error && <p className="form-message error" style={{ marginTop: "1rem" }}>{error}</p>}

@@ -11,6 +11,8 @@ import {
 import { todayISO } from "@/lib/format";
 
 const TIPOS: Tipo[] = ["entrada", "saida", "investimento"];
+const TIPOS_IMAGEM = ["image/jpeg", "image/png"];
+const TAMANHO_MAXIMO_IMAGEM = 8 * 1024 * 1024; // 8MB — mesmo teto do bodySizeLimit em next.config.ts
 
 async function extractText(file: File): Promise<string> {
   const buffer = Buffer.from(await file.arrayBuffer());
@@ -58,6 +60,22 @@ function arvoreDeCategorias(): string {
   }).join("\n");
 }
 
+function promptImagem(): string {
+  return `Você recebe uma imagem de um comprovante, nota fiscal, fatura ou extrato bancário.
+Extraia cada transação real visível e classifique cada uma usando exatamente esta árvore de tipo → categoria → subcategoria
+(use sempre os valores entre aspas, nunca o rótulo em português):
+
+${arvoreDeCategorias()}
+
+Para cada transação retorne:
+- "tipo": um dos 3 valores acima
+- "categoria": uma categoria válida para o tipo escolhido
+- "subcategoria": uma subcategoria válida para a categoria escolhida
+- "valor": número positivo (sem símbolo de moeda)
+- "descricao": descrição curta da transação
+- "date": data no formato YYYY-MM-DD (se o ano não estiver claro, use o ano atual)`;
+}
+
 function categoriaValida(tipo: Tipo, categoria: string): string {
   const categorias = categoriasDoTipo(tipo);
   return categorias.some((c) => c.value === categoria) ? categoria : categorias[categorias.length - 1].value;
@@ -76,26 +94,53 @@ export interface ExtractionResult {
 export async function extractTransactions(formData: FormData): Promise<ExtractionResult> {
   const file = formData.get("file");
   if (!(file instanceof File) || file.size === 0) {
-    return { error: "Selecione um arquivo (PDF, CSV ou TXT)." };
+    return { error: "Selecione um arquivo (PDF, imagem, CSV ou TXT)." };
   }
 
   if (!process.env.GEMINI_API_KEY) {
     return { error: "GEMINI_API_KEY não configurada no servidor." };
   }
 
-  let text: string;
-  try {
-    text = await extractText(file);
-  } catch {
-    return { error: "Não foi possível ler o arquivo enviado." };
+  const isImagem = TIPOS_IMAGEM.includes(file.type);
+  if (isImagem && file.size > TAMANHO_MAXIMO_IMAGEM) {
+    return { error: "Imagem muito grande — o limite é 8MB." };
   }
-
-  const trimmed = text.slice(0, 15000);
 
   const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
   const model = process.env.GEMINI_MODEL || "gemini-flash-latest";
 
-  const prompt = `Você recebe abaixo o conteúdo de um extrato financeiro (PDF/CSV/TXT convertido em texto).
+  let raw: unknown[];
+  try {
+    let response;
+
+    if (isImagem) {
+      const bytes = Buffer.from(await file.arrayBuffer());
+      response = await ai.models.generateContent({
+        model,
+        contents: [
+          {
+            role: "user",
+            parts: [
+              { text: promptImagem() },
+              { inlineData: { mimeType: file.type, data: bytes.toString("base64") } },
+            ],
+          },
+        ],
+        config: {
+          responseMimeType: "application/json",
+          responseSchema: TRANSACTION_SCHEMA,
+        },
+      });
+    } else {
+      let text: string;
+      try {
+        text = await extractText(file);
+      } catch {
+        return { error: "Não foi possível ler o arquivo enviado." };
+      }
+      const trimmed = text.slice(0, 15000);
+
+      const prompt = `Você recebe abaixo o conteúdo de um extrato financeiro (PDF/CSV/TXT convertido em texto).
 Extraia cada transação e classifique cada uma usando exatamente esta árvore de tipo → categoria → subcategoria
 (use sempre os valores entre aspas, nunca o rótulo em português):
 
@@ -114,16 +159,15 @@ Conteúdo do extrato:
 ${trimmed}
 """`;
 
-  let raw: unknown[];
-  try {
-    const response = await ai.models.generateContent({
-      model,
-      contents: prompt,
-      config: {
-        responseMimeType: "application/json",
-        responseSchema: TRANSACTION_SCHEMA,
-      },
-    });
+      response = await ai.models.generateContent({
+        model,
+        contents: prompt,
+        config: {
+          responseMimeType: "application/json",
+          responseSchema: TRANSACTION_SCHEMA,
+        },
+      });
+    }
 
     const jsonText = response.text;
     if (!jsonText) throw new Error("resposta vazia");
