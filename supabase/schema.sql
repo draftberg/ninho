@@ -191,6 +191,22 @@ create table if not exists push_subscriptions (
   created_at timestamptz not null default now()
 );
 
+-- ---------- conexão entre perfis (convidar → aceitar → desconectar) ----------
+-- um perfil convida o outro; ao aceitar, as informações se cruzam (Fase 1 é
+-- só o estado — a visibilidade por conexão entra na Fase 2). Berg↔Gabi já
+-- nascem 'aceita' pelo seed no fim deste arquivo.
+
+create table if not exists conexoes (
+  id uuid primary key default gen_random_uuid(),
+  solicitante_email text not null,
+  convidado_email text not null,
+  status text not null default 'pendente'
+    check (status in ('pendente', 'aceita', 'recusada', 'desconectada')),
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  unique (solicitante_email, convidado_email)
+);
+
 -- ---------- segurança: apenas as 2 contas do casal ----------
 -- Ajuste os e-mails abaixo para corresponder aos mesmos definidos em
 -- src/lib/allowlist.ts. A allowlist é checada em dois lugares por
@@ -215,6 +231,7 @@ alter table financiamentos enable row level security;
 alter table chat_conversas enable row level security;
 alter table chat_mensagens enable row level security;
 alter table push_subscriptions enable row level security;
+alter table conexoes enable row level security;
 
 drop policy if exists "casal pode ver lancamentos" on entries;
 create policy "casal pode ver lancamentos" on entries
@@ -382,3 +399,24 @@ create policy "casal pode atualizar push subscriptions" on push_subscriptions
 drop policy if exists "casal pode apagar push subscriptions" on push_subscriptions;
 create policy "casal pode apagar push subscriptions" on push_subscriptions
   for delete using (is_allowed_email());
+
+drop policy if exists "casal pode ver conexoes" on conexoes;
+create policy "casal pode ver conexoes" on conexoes
+  for select using (is_allowed_email());
+
+drop policy if exists "casal pode criar conexoes" on conexoes;
+create policy "casal pode criar conexoes" on conexoes
+  for insert with check (is_allowed_email());
+
+drop policy if exists "casal pode atualizar conexoes" on conexoes;
+create policy "casal pode atualizar conexoes" on conexoes
+  for update using (is_allowed_email()) with check (is_allowed_email());
+
+drop policy if exists "casal pode apagar conexoes" on conexoes;
+create policy "casal pode apagar conexoes" on conexoes
+  for delete using (is_allowed_email());
+
+-- seed: Berg e Gabi já conectados (mesmos e-mails de is_allowed_email/allowlist).
+insert into conexoes (solicitante_email, convidado_email, status)
+values ('bergg.pinheiro@gmail.com', 'gnogueiradias@gmail.com', 'aceita')
+on conflict (solicitante_email, convidado_email) do update set status = 'aceita';

@@ -443,3 +443,17 @@ export interface PushSubscriptionRecord {
   auth: string;
   created_at: string;
 }
+
+// Conexão entre dois perfis (um convida, o outro aceita). Fase 1: só o
+// estado — a visibilidade dos dados ainda não depende disso (ver
+// src/lib/conexoes.ts e supabase/migrations/019_conexoes.sql).
+export type StatusConexao = "pendente" | "aceita" | "recusada" | "desconectada";
+
+export interface Conexao {
+  id: string;
+  solicitante_email: string;
+  convidado_email: string;
+  status: StatusConexao;
+  created_at: string;
+  updated_at: string;
+}

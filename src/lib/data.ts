@@ -6,6 +6,7 @@ import type {
   ChatMensagem,
   ChecklistItem,
   ChecklistStatus,
+  Conexao,
   Entry,
   Financiamento,
   Goal,
@@ -67,6 +68,24 @@ export async function fetchProfiles(supabase: SupabaseClient): Promise<Profile[]
   const { data, error } = await supabase.from("profiles").select("*");
   if (error) throw error;
   return data as Profile[];
+}
+
+// A conexão em que este e-mail aparece (como solicitante ou convidado),
+// ignorando as já recusadas. Retorna null se ainda não há nenhuma.
+export async function fetchConexaoDoUsuario(
+  supabase: SupabaseClient,
+  email: string,
+): Promise<Conexao | null> {
+  const { data, error } = await supabase
+    .from("conexoes")
+    .select("*")
+    .or(`solicitante_email.eq.${email},convidado_email.eq.${email}`)
+    .neq("status", "recusada")
+    .order("updated_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (error) throw error;
+  return (data as Conexao | null) ?? null;
 }
 
 export async function fetchBudgetLimits(supabase: SupabaseClient): Promise<BudgetLimit[]> {

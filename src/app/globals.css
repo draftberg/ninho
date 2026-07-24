@@ -1942,6 +1942,34 @@ a {
   margin-bottom: 0.35rem;
 }
 
+.conexao-card {
+  max-width: 480px;
+  margin-top: 1.25rem;
+}
+
+.conexao-card-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.6rem;
+}
+
+.conexao-card-header h3 {
+  margin: 0;
+}
+
+.conexao-status {
+  color: var(--color-ink-muted);
+  font-size: 0.9rem;
+  margin-bottom: 0.9rem;
+  line-height: 1.5;
+}
+
+.conexao-actions {
+  display: flex;
+  gap: 0.6rem;
+}
+
 .calendar-chip.income {
   background: var(--color-pastel-entrada);
   color: var(--color-pastel-entrada-ink);

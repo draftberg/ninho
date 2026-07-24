@@ -1,9 +1,10 @@
 import { createClient } from "@/lib/supabase/server";
-import { fetchProfiles } from "@/lib/data";
+import { fetchProfiles, fetchConexaoDoUsuario } from "@/lib/data";
 import { formatBRL } from "@/lib/format";
 import { salarioParcelas } from "@/lib/types";
 import { personColorClass, personNameFor } from "@/lib/allowlist";
 import { ProfileForm } from "./ProfileForm";
+import { ConexaoCard } from "./ConexaoCard";
 import { NotificationOptIn } from "@/components/NotificationOptIn";
 
 export default async function PerfilPage() {
@@ -12,8 +13,11 @@ export default async function PerfilPage() {
     data: { user },
   } = await supabase.auth.getUser();
 
-  const profiles = await fetchProfiles(supabase);
   const email = user?.email ?? "";
+  const [profiles, conexao] = await Promise.all([
+    fetchProfiles(supabase),
+    email ? fetchConexaoDoUsuario(supabase, email.toLowerCase()) : Promise.resolve(null),
+  ]);
   const own = profiles.find((p) => p.email.toLowerCase() === email.toLowerCase()) ?? null;
   const partner = profiles.find((p) => p.email.toLowerCase() !== email.toLowerCase()) ?? null;
   const partnerParcelas = partner ? salarioParcelas(partner) : [];
@@ -22,6 +26,7 @@ export default async function PerfilPage() {
     <div>
       <h2 className="section-title">Perfil</h2>
       <ProfileForm email={email} profile={own} />
+      <ConexaoCard email={email} conexao={conexao} />
       <NotificationOptIn />
 
       {partner && (
