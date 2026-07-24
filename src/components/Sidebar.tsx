@@ -10,7 +10,6 @@ import {
   CreditCardIcon,
   ListChecksIcon,
   CalendarBlankIcon,
-  UploadSimpleIcon,
   ChartPieSliceIcon,
   HandCoinsIcon,
   CaretLeftIcon,
@@ -29,7 +28,6 @@ const LINKS = [
   { href: "/checklist", label: "Checklist", icon: ListChecksIcon },
   { href: "/orcamento", label: "Orçamento", icon: ChartPieSliceIcon },
   { href: "/calendario", label: "Calendário", icon: CalendarBlankIcon },
-  { href: "/importar-extrato", label: "Importar", icon: UploadSimpleIcon },
 ];
 
 const STORAGE_KEY = "ninho-sidebar-collapsed";
