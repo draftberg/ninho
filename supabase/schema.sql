@@ -220,6 +220,50 @@ as $$
   select auth.email() in ('bergg.pinheiro@gmail.com', 'gnogueiradias@gmail.com');
 $$;
 
+-- ---------- visibilidade por conexão (ver conexoes + migração 020) ----------
+-- Mapeia e-mail → nome de exibição. MANTENHA EM SINCRONIA com PERSON_NAMES em
+-- src/lib/allowlist.ts (mesma sincronia manual que is_allowed_email já exige).
+create or replace function nome_do_email(e text)
+returns text
+language sql
+immutable
+as $$
+  select case lower(coalesce(e, ''))
+    when 'bergg.pinheiro@gmail.com' then 'Berg'
+    when 'gnogueiradias@gmail.com' then 'Gabi'
+    else e
+  end;
+$$;
+
+-- Nome de exibição do usuário logado (nunca null).
+create or replace function meu_nome()
+returns text
+language sql
+stable
+as $$
+  select nome_do_email(auth.email());
+$$;
+
+-- O usuário logado tem alguma conexão aceita? Conectado → vê tudo;
+-- desconectado/pendente → vê só o próprio (ver policies de SELECT abaixo).
+create or replace function tenho_conexao_aceita()
+returns boolean
+language sql
+stable
+security definer
+set search_path = public, pg_temp
+as $$
+  select exists (
+    select 1 from public.conexoes c
+    where c.status = 'aceita'
+      and auth.email() in (c.solicitante_email, c.convidado_email)
+  );
+$$;
+
+grant execute on function nome_do_email(text) to authenticated, anon;
+grant execute on function meu_nome() to authenticated, anon;
+grant execute on function tenho_conexao_aceita() to authenticated, anon;
+
 alter table entries enable row level security;
 alter table goals enable row level security;
 alter table checklist_items enable row level security;
@@ -235,7 +279,7 @@ alter table conexoes enable row level security;
 
 drop policy if exists "casal pode ver lancamentos" on entries;
 create policy "casal pode ver lancamentos" on entries
-  for select using (is_allowed_email());
+  for select using (is_allowed_email() and (tenho_conexao_aceita() or autor = meu_nome()));
 
 drop policy if exists "casal pode inserir lancamentos" on entries;
 create policy "casal pode inserir lancamentos" on entries
@@ -263,7 +307,7 @@ create policy "casal pode apagar metas" on goals
 
 drop policy if exists "casal pode ver checklist items" on checklist_items;
 create policy "casal pode ver checklist items" on checklist_items
-  for select using (is_allowed_email());
+  for select using (is_allowed_email() and (tenho_conexao_aceita() or pessoa = meu_nome() or pessoa is null));
 
 drop policy if exists "casal pode criar checklist items" on checklist_items;
 create policy "casal pode criar checklist items" on checklist_items
@@ -279,7 +323,12 @@ create policy "casal pode apagar checklist items" on checklist_items
 
 drop policy if exists "casal pode ver checklist status" on checklist_status;
 create policy "casal pode ver checklist status" on checklist_status
-  for select using (is_allowed_email());
+  for select using (
+    is_allowed_email() and (
+      tenho_conexao_aceita()
+      or exists (select 1 from checklist_items ci where ci.id = checklist_status.item_id)
+    )
+  );
 
 drop policy if exists "casal pode gravar checklist status" on checklist_status;
 create policy "casal pode gravar checklist status" on checklist_status
@@ -289,10 +338,10 @@ drop policy if exists "casal pode atualizar checklist status" on checklist_statu
 create policy "casal pode atualizar checklist status" on checklist_status
   for update using (is_allowed_email()) with check (is_allowed_email());
 
--- qualquer um do casal pode ver os dois perfis (visão combinada do planejamento)
+-- conectado vê os dois perfis; desconectado vê só o próprio
 drop policy if exists "casal pode ver perfis" on profiles;
 create policy "casal pode ver perfis" on profiles
-  for select using (is_allowed_email());
+  for select using (is_allowed_email() and (tenho_conexao_aceita() or email = auth.email()));
 
 -- cada um só pode criar/editar o próprio perfil
 drop policy if exists "cada um cria o proprio perfil" on profiles;
@@ -310,7 +359,7 @@ create policy "cada um apaga o proprio perfil" on profiles
 
 drop policy if exists "casal pode ver metas de gasto" on budget_limits;
 create policy "casal pode ver metas de gasto" on budget_limits
-  for select using (is_allowed_email());
+  for select using (is_allowed_email() and (tenho_conexao_aceita() or autor = meu_nome()));
 
 drop policy if exists "casal pode criar metas de gasto" on budget_limits;
 create policy "casal pode criar metas de gasto" on budget_limits
@@ -326,7 +375,7 @@ create policy "casal pode apagar metas de gasto" on budget_limits
 
 drop policy if exists "casal pode ver cartoes" on cartoes;
 create policy "casal pode ver cartoes" on cartoes
-  for select using (is_allowed_email());
+  for select using (is_allowed_email() and (tenho_conexao_aceita() or pessoa = meu_nome() or pessoa is null));
 
 drop policy if exists "casal pode criar cartoes" on cartoes;
 create policy "casal pode criar cartoes" on cartoes
@@ -342,7 +391,7 @@ create policy "casal pode apagar cartoes" on cartoes
 
 drop policy if exists "casal pode ver financiamentos" on financiamentos;
 create policy "casal pode ver financiamentos" on financiamentos
-  for select using (is_allowed_email());
+  for select using (is_allowed_email() and (tenho_conexao_aceita() or pessoa = meu_nome() or pessoa is null));
 
 drop policy if exists "casal pode criar financiamentos" on financiamentos;
 create policy "casal pode criar financiamentos" on financiamentos
@@ -358,7 +407,7 @@ create policy "casal pode apagar financiamentos" on financiamentos
 
 drop policy if exists "casal pode ver conversas" on chat_conversas;
 create policy "casal pode ver conversas" on chat_conversas
-  for select using (is_allowed_email());
+  for select using (is_allowed_email() and (tenho_conexao_aceita() or autor = meu_nome()));
 
 drop policy if exists "casal pode criar conversas" on chat_conversas;
 create policy "casal pode criar conversas" on chat_conversas
@@ -374,7 +423,12 @@ create policy "casal pode apagar conversas" on chat_conversas
 
 drop policy if exists "casal pode ver mensagens" on chat_mensagens;
 create policy "casal pode ver mensagens" on chat_mensagens
-  for select using (is_allowed_email());
+  for select using (
+    is_allowed_email() and (
+      tenho_conexao_aceita()
+      or exists (select 1 from chat_conversas cc where cc.id = chat_mensagens.conversa_id)
+    )
+  );
 
 drop policy if exists "casal pode criar mensagens" on chat_mensagens;
 create policy "casal pode criar mensagens" on chat_mensagens
@@ -386,7 +440,7 @@ create policy "casal pode apagar mensagens" on chat_mensagens
 
 drop policy if exists "casal pode ver push subscriptions" on push_subscriptions;
 create policy "casal pode ver push subscriptions" on push_subscriptions
-  for select using (is_allowed_email());
+  for select using (is_allowed_email() and (tenho_conexao_aceita() or autor = meu_nome()));
 
 drop policy if exists "casal pode criar push subscriptions" on push_subscriptions;
 create policy "casal pode criar push subscriptions" on push_subscriptions
