@@ -81,6 +81,7 @@ async function criarItemRecorrente(
       tipo: tipoChecklist,
       categoria: entry.categoria,
       subcategoria: entry.subcategoria,
+      pessoa: entry.autor,
     })
     .select()
     .single();
